@@ -8,5 +8,7 @@ public class User
     public string Email { get; set; }
     public byte[] PasswordHash { get; set; }
     public byte[] PasswordSalt { get; set; }
-    public string Role { get; set; } 
+    public string Role { get; set; } = "User"; // "Admin" or "User"
+
+    public ICollection<UserSolution> Solutions { get; set; }
 }
