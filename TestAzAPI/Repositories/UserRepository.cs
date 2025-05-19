@@ -14,4 +14,14 @@ public class UserRepository : Repository<User>, IUserRepository
         return await _dbSet.FirstOrDefaultAsync(u => u.Name == nameOrSurname || u.Surname == nameOrSurname);
     }
 
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
+    }
+    public async Task<bool> ExistsAsync(string email)
+    {
+        return await _dbSet.AnyAsync(u => u.Email == email);
+    }
+
+
 }
