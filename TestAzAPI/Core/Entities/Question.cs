@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using TestAzAPI.Enums;
+using TestAzAPI.Core.Enums;
 
-namespace TestAzAPI.Models;
+namespace TestAzAPI.Core.Entities;
 
 public class Question
 {
@@ -15,7 +15,6 @@ public class Question
     public int Points { get; set; }
     public int Order { get; set; }
     
-    // Navigation properties
     public Guid QuizId { get; set; }
     public Quiz Quiz { get; set; } = null!;
     public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();

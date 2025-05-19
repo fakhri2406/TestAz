@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using TestAzAPI.Core.Entities.Base;
 
-namespace TestAzAPI.Models;
+namespace TestAzAPI.Core.Entities;
 
 public class Quiz
 {
@@ -19,9 +20,8 @@ public class Quiz
     public bool IsPublished { get; set; }
     public int TimeLimitMinutes { get; set; }
     
-    // Navigation properties
-    public string CreatedById { get; set; } = string.Empty;
-    public ApplicationUser CreatedBy { get; set; } = null!;
+    public Guid CreatedById { get; set; }
+    public BaseUser CreatedBy { get; set; } = null!;
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     public ICollection<QuizAttempt> QuizAttempts { get; set; } = new List<QuizAttempt>();
 } 

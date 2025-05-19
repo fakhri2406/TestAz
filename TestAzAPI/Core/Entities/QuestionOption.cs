@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TestAzAPI.Models;
+namespace TestAzAPI.Core.Entities;
 
 public class QuestionOption
 {
@@ -13,7 +13,6 @@ public class QuestionOption
     public bool IsCorrect { get; set; }
     public int Order { get; set; }
     
-    // Navigation properties
     public Guid QuestionId { get; set; }
     public Question Question { get; set; } = null!;
 } 

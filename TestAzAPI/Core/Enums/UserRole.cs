@@ -1,4 +1,4 @@
-namespace TestAzAPI.Enums;
+namespace TestAzAPI.Core.Enums;
 
 public enum UserRole
 {

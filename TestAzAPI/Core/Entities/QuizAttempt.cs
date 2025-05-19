@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using TestAzAPI.Core.Entities.Base;
 
-namespace TestAzAPI.Models;
+namespace TestAzAPI.Core.Entities;
 
 public class QuizAttempt
 {
@@ -15,7 +16,7 @@ public class QuizAttempt
     
     public Guid QuizId { get; set; }
     public Quiz Quiz { get; set; } = null!;
-    public string UserId { get; set; } = string.Empty;
-    public ApplicationUser User { get; set; } = null!;
+    public Guid UserId { get; set; }
+    public BaseUser User { get; set; } = null!;
     public ICollection<QuestionAnswer> Answers { get; set; } = new List<QuestionAnswer>();
 } 

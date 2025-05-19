@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TestAzAPI.Models;
+namespace TestAzAPI.Core.Entities;
 
 public class QuestionAnswer
 {
@@ -15,7 +15,6 @@ public class QuestionAnswer
     public int PointsEarned { get; set; }
     public string? Feedback { get; set; }
     
-    // Navigation properties
     public Guid QuestionId { get; set; }
     public Question Question { get; set; } = null!;
     public Guid QuizAttemptId { get; set; }
