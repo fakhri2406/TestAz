@@ -1,9 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using TestAzAPI.Data;
+using TestAzAPI.Repositories;
+using TestAzAPI.Repositories.Base;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<TestAzDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITestRepository, TestRepository>();
+builder.Services.AddScoped<IVideoCourseRepository, VideoCourseRepository>();
+builder.Services.AddScoped<IUserSolutionRepository, UserSolutionRepository>();
 
 var app = builder.Build();
 

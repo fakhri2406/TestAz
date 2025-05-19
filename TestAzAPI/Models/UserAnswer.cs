@@ -1,4 +1,5 @@
 namespace TestAzAPI.Models;
+
 public class UserAnswer
 {
     public Guid Id { get; set; }
