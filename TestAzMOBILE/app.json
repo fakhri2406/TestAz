@@ -1,5 +1,6 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "TestAz",
     "slug": "testaz-mobile",
     "version": "1.0.0",
@@ -14,11 +15,22 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+=======
+    "name": "TestAzMOBILE",
+    "slug": "TestAzMOBILE",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "testazmobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+>>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
+<<<<<<< HEAD
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
@@ -32,3 +44,32 @@
     "scheme": "testaz"
   }
 } 
+=======
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
+>>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893
