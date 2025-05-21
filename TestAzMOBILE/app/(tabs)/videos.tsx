@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../../constants/Config';
+import { mockVideoCourses } from '../../constants/mockData';
 
 interface VideoCourse {
   id: string;
@@ -31,19 +31,9 @@ export default function VideosScreen() {
 
   const loadCourses = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_URL}/video-courses`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load video courses');
-      }
-
-      const data = await response.json();
-      setCourses(data);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setCourses(mockVideoCourses);
     } catch (error) {
       Alert.alert('Error', 'Failed to load video courses');
     }

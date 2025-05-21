@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'rea
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../hooks/useAuth';
+import { mockUser, mockUserSolutions } from '../../constants/mockData';
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
+  const [solutions, setSolutions] = useState(mockUserSolutions);
   const { logout } = useAuth();
 
   useEffect(() => {
@@ -20,10 +22,9 @@ export default function ProfileScreen() {
   }, []);
 
   const loadUserData = async () => {
-    const userStr = await AsyncStorage.getItem('user');
-    if (userStr) {
-      setUser(JSON.parse(userStr));
-    }
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setUser(mockUser);
   };
 
   const handleLogout = async () => {
@@ -72,6 +73,19 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Test Results</Text>
+        {solutions.map((solution) => (
+          <View key={solution.id} style={styles.resultItem}>
+            <Text style={styles.resultTitle}>Test #{solution.testId}</Text>
+            <Text style={styles.resultScore}>Score: {solution.score}%</Text>
+            <Text style={styles.resultDate}>
+              Completed: {new Date(solution.completedAt).toLocaleDateString()}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
@@ -159,5 +173,25 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  resultItem: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  resultTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  resultScore: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginBottom: 4,
+  },
+  resultDate: {
+    fontSize: 12,
+    color: '#666',
   },
 }); 

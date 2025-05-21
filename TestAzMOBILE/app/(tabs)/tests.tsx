@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../../constants/Config';
+import { mockTests } from '../../constants/mockData';
 
 interface Test {
   id: string;
@@ -30,19 +30,9 @@ export default function TestsScreen() {
 
   const loadTests = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`${API_URL}/tests`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load tests');
-      }
-
-      const data = await response.json();
-      setTests(data);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setTests(mockTests);
     } catch (error) {
       Alert.alert('Error', 'Failed to load tests');
     }
