@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { translations } from '@/constants/translations';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -27,7 +28,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: translations.home,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -36,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tests"
         options={{
-          title: 'Tests',
+          title: translations.tests,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text" size={size} color={color} />
           ),
@@ -45,7 +46,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="videos"
         options={{
-          title: 'Videos',
+          title: translations.videos,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="videocam" size={size} color={color} />
           ),
@@ -54,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: translations.profile,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

@@ -1,27 +1,24 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { translations } from '@/constants/translations';
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
 
   return (
-    <View style={[
-      styles.container,
-      { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }
-    ]}>
-      <Text style={[
-        styles.title,
-        { color: colorScheme === 'dark' ? '#fff' : '#000' }
-      ]}>
-        Welcome to TestAz
-      </Text>
-      <Text style={[
-        styles.subtitle,
-        { color: colorScheme === 'dark' ? '#ccc' : '#666' }
-      ]}>
-        Your learning journey starts here
-      </Text>
-    </View>
+    <ThemedView style={styles.container}>
+      <ThemedText type="title" style={styles.title}>
+        {translations.welcomeToTestAz}
+      </ThemedText>
+      <ThemedText type="subtitle" style={styles.subtitle}>
+        {translations.learningJourneyStarts}
+      </ThemedText>
+    </ThemedView>
   );
 }
 
@@ -36,6 +33,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
