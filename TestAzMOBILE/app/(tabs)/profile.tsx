@@ -1,197 +1,129 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  useColorScheme,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../../hooks/useAuth';
-import { mockUser, mockUserSolutions } from '../../constants/mockData';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-}
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState<User | null>(null);
-  const [solutions, setSolutions] = useState(mockUserSolutions);
-  const { logout } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const colorScheme = useColorScheme();
+  const router = useRouter();
 
   useEffect(() => {
     loadUserData();
   }, []);
 
   const loadUserData = async () => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setUser(mockUser);
-  };
-
-  const handleLogout = async () => {
     try {
-      await logout();
-      router.replace('/login');
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      console.error('Error loading user data:', error);
     }
   };
 
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('user');
+              router.replace('/login');
+            } catch (error) {
+              console.error('Error logging out:', error);
+            }
+          },
+        },
+      ]
     );
-  }
+  };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }]}>
       <View style={styles.header}>
-        <Text style={styles.name}>{user.name}</Text>
-        <Text style={styles.email}>{user.email}</Text>
-        {user.isAdmin && (
-          <View style={styles.adminBadge}>
-            <Text style={styles.adminText}>Admin</Text>
-          </View>
-        )}
-      </View>
-
-      {user.isAdmin && (
-        <View style={styles.adminSection}>
-          <Text style={styles.sectionTitle}>Admin Controls</Text>
-          <TouchableOpacity
-            style={styles.adminButton}
-            onPress={() => router.push('/admin/tests')}
-          >
-            <Text style={styles.buttonText}>Manage Tests</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.adminButton}
-            onPress={() => router.push('/admin/video-courses')}
-          >
-            <Text style={styles.buttonText}>Manage Video Courses</Text>
-          </TouchableOpacity>
+        <View style={styles.avatarContainer}>
+          <Ionicons name="person-circle" size={80} color="#007AFF" />
         </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Test Results</Text>
-        {solutions.map((solution) => (
-          <View key={solution.id} style={styles.resultItem}>
-            <Text style={styles.resultTitle}>Test #{solution.testId}</Text>
-            <Text style={styles.resultScore}>Score: {solution.score}%</Text>
-            <Text style={styles.resultDate}>
-              Completed: {new Date(solution.completedAt).toLocaleDateString()}
-            </Text>
-          </View>
-        ))}
+        <Text style={[styles.name, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+          {user?.email || 'User'}
+        </Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push('/profile/edit')}
-        >
-          <Text style={styles.buttonText}>Edit Profile</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+          <Ionicons name="settings-outline" size={24} color="#007AFF" />
+          <Text style={[styles.menuText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+            Settings
+          </Text>
+          <Ionicons name="chevron-forward" size={24} color="#666" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={[styles.buttonText, styles.logoutText]}>Logout</Text>
+
+        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+          <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
+          <Text style={[styles.menuText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+            Help & Support
+          </Text>
+          <Ionicons name="chevron-forward" size={24} color="#666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+          <Text style={[styles.menuText, { color: '#FF3B30' }]}>Logout</Text>
+          <Ionicons name="chevron-forward" size={24} color="#666" />
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: 'white',
-    padding: 20,
     alignItems: 'center',
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  avatarContainer: {
+    marginBottom: 10,
+  },
   name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  email: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
-  },
-  adminBadge: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  adminText: {
-    color: '#000',
+    fontSize: 20,
     fontWeight: 'bold',
   },
   section: {
     padding: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-  },
-  logoutText: {
-    color: 'white',
-  },
-  adminSection: {
-    padding: 20,
-    backgroundColor: 'white',
-    marginBottom: 20,
-  },
-  adminButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  resultItem: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  resultTitle: {
+  menuText: {
+    flex: 1,
+    marginLeft: 15,
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  resultScore: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  resultDate: {
-    fontSize: 12,
-    color: '#666',
   },
 }); 

@@ -29,7 +29,9 @@ public class AuthController : ControllerBase
         {
             Email = dto.Email,
             PasswordHash = hash,
-            PasswordSalt = salt
+            PasswordSalt = salt,
+            Name = dto.Name,
+            Surname = dto.Surname
         };
 
         await _userRepo.AddAsync(user);

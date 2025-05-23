@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Response type
 interface ApiResponse<T> {
@@ -149,4 +150,50 @@ class ApiService {
     }
 }
 
-export const apiService = new ApiService(); 
+export const apiService = new ApiService();
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  surname: string;
+}
+
+interface AuthResponse {
+  message: string;
+  id?: string;
+  email?: string;
+}
+
+export const api = {
+  async login(data: LoginRequest): Promise<AuthResponse> {
+    const response = await apiService.post<AuthResponse>(API_CONFIG.ENDPOINTS.USER_LOGIN, data);
+    if (response.data) {
+      await AsyncStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    }
+    throw new Error('Login failed');
+  },
+
+  async signup(data: SignupRequest): Promise<AuthResponse> {
+    const response = await apiService.post<AuthResponse>(API_CONFIG.ENDPOINTS.USER_REGISTER, data);
+    if (response.data) {
+      return response.data;
+    }
+    throw new Error('Signup failed');
+  },
+
+  async logout(): Promise<void> {
+    await AsyncStorage.removeItem('user');
+  },
+
+  async getCurrentUser(): Promise<any> {
+    const user = await AsyncStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+}; 

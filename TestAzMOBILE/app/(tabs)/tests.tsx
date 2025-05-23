@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mockTests } from '../../constants/mockData';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface Test {
   id: string;
@@ -14,6 +17,11 @@ interface Test {
 export default function TestsScreen() {
   const [tests, setTests] = useState<Test[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const cardBackgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     loadTests();
@@ -44,23 +52,23 @@ export default function TestsScreen() {
 
   const renderTestItem = ({ item }: { item: Test }) => (
     <TouchableOpacity
-      style={styles.testItem}
+      style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
       onPress={() => handleTestPress(item)}
     >
-      <View style={styles.testHeader}>
-        <Text style={styles.testTitle}>{item.title}</Text>
+      <ThemedView style={styles.testHeader}>
+        <ThemedText type="defaultSemiBold" style={styles.testTitle}>{item.title}</ThemedText>
         {item.isPremium && (
-          <View style={styles.premiumBadge}>
-            <Text style={styles.premiumText}>Premium</Text>
-          </View>
+          <ThemedView style={styles.premiumBadge}>
+            <ThemedText style={styles.premiumText}>Premium</ThemedText>
+          </ThemedView>
         )}
-      </View>
-      <Text style={styles.testDescription}>{item.description}</Text>
+      </ThemedView>
+      <ThemedText type="default" style={styles.testDescription}>{item.description}</ThemedText>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <FlatList
         data={tests}
         renderItem={renderTestItem}
@@ -69,26 +77,24 @@ export default function TestsScreen() {
       />
       {isAdmin && (
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: tintColor }]}
           onPress={() => router.push('/test/create')}
         >
-          <Text style={styles.addButtonText}>Add New Test</Text>
+          <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>Add New Test</ThemedText>
         </TouchableOpacity>
       )}
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   list: {
     padding: 16,
   },
   testItem: {
-    backgroundColor: 'white',
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
@@ -106,10 +112,9 @@ const styles = StyleSheet.create({
   },
   testTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
   },
   testDescription: {
-    color: '#666',
+    opacity: 0.8,
   },
   premiumBadge: {
     backgroundColor: '#FFD700',
@@ -126,7 +131,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 30,
     elevation: 4,
@@ -136,7 +140,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   addButtonText: {
-    color: 'white',
     fontWeight: 'bold',
   },
 }); 

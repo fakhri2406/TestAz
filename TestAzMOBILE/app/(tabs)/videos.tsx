@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import { FlatList, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mockVideoCourses } from '../../constants/mockData';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface VideoCourse {
   id: string;
@@ -15,6 +18,11 @@ interface VideoCourse {
 export default function VideosScreen() {
   const [courses, setCourses] = useState<VideoCourse[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const cardBackgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     loadCourses();
@@ -45,25 +53,25 @@ export default function VideosScreen() {
 
   const renderCourseItem = ({ item }: { item: VideoCourse }) => (
     <TouchableOpacity
-      style={styles.courseItem}
+      style={[styles.courseItem, { backgroundColor: cardBackgroundColor }]}
       onPress={() => handleCoursePress(item)}
     >
       <Image
         source={{ uri: item.thumbnailUrl }}
         style={styles.thumbnail}
       />
-      <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle}>{item.title}</Text>
-        <Text style={styles.courseDescription} numberOfLines={2}>
+      <ThemedView style={styles.courseInfo}>
+        <ThemedText type="defaultSemiBold" style={styles.courseTitle}>{item.title}</ThemedText>
+        <ThemedText type="default" style={styles.courseDescription} numberOfLines={2}>
           {item.description}
-        </Text>
-        <Text style={styles.duration}>{item.duration}</Text>
-      </View>
+        </ThemedText>
+        <ThemedText style={[styles.duration, { color: tintColor }]}>{item.duration}</ThemedText>
+      </ThemedView>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <FlatList
         data={courses}
         renderItem={renderCourseItem}
@@ -72,26 +80,24 @@ export default function VideosScreen() {
       />
       {isAdmin && (
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: tintColor }]}
           onPress={() => router.push('/video-course/create')}
         >
-          <Text style={styles.addButtonText}>Add New Course</Text>
+          <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>Add New Course</ThemedText>
         </TouchableOpacity>
       )}
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   list: {
     padding: 16,
   },
   courseItem: {
-    backgroundColor: 'white',
     borderRadius: 8,
     marginBottom: 16,
     overflow: 'hidden',
@@ -111,22 +117,19 @@ const styles = StyleSheet.create({
   },
   courseTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 8,
   },
   courseDescription: {
-    color: '#666',
+    opacity: 0.8,
     marginBottom: 8,
   },
   duration: {
-    color: '#007AFF',
     fontWeight: '500',
   },
   addButton: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 30,
     elevation: 4,
@@ -136,7 +139,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   addButtonText: {
-    color: 'white',
     fontWeight: 'bold',
   },
 }); 

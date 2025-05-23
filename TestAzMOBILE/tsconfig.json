@@ -2,18 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-<<<<<<< HEAD
     "baseUrl": ".",
     "paths": {
-      "*": ["*"]
-    }
-  }
-} 
-=======
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -23,4 +14,3 @@
     "expo-env.d.ts"
   ]
 }
->>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893
