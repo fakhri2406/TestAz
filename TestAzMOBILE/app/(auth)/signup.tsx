@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -10,17 +8,25 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router'; // ✅ Correct hook import
+import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function SignupScreen() {
-  const router = useRouter(); // ✅ Correct initialization
+  const router = useRouter();
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'icon');
 
   const handleSignup = async () => {
     if (!name || !surname || !email || !password || !confirmPassword) {
@@ -36,11 +42,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await api.signup({ email, password, name, surname });
-
-      // Automatically log in after successful signup
       await api.login({ email, password });
-
-      // ✅ Navigate to the tests tab
       router.replace('/(tabs)/tests');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Signup failed');
@@ -52,30 +54,45 @@ export default function SignupScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor }]}
     >
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Sign up to get started</Text>
+      <ThemedView style={styles.formContainer}>
+        <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
+        <ThemedText type="subtitle" style={styles.subtitle}>Sign up to get started</ThemedText>
 
-        <View style={styles.inputContainer}>
+        <ThemedView style={styles.inputContainer}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Name"
+            placeholderTextColor={borderColor}
             value={name}
             onChangeText={setName}
             editable={!loading}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Surname"
+            placeholderTextColor={borderColor}
             value={surname}
             onChangeText={setSurname}
             editable={!loading}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Email"
+            placeholderTextColor={borderColor}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -83,32 +100,42 @@ export default function SignupScreen() {
             editable={!loading}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Password"
+            placeholderTextColor={borderColor}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             editable={!loading}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Confirm Password"
+            placeholderTextColor={borderColor}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
             editable={!loading}
           />
-        </View>
+        </ThemedView>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, { backgroundColor: tintColor }, loading && styles.buttonDisabled]}
           onPress={handleSignup}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={backgroundColor} />
           ) : (
-            <Text style={styles.buttonText}>Create Account</Text>
+            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>Create Account</ThemedText>
           )}
         </TouchableOpacity>
 
@@ -117,20 +144,18 @@ export default function SignupScreen() {
           onPress={() => router.push('/login')}
           disabled={loading}
         >
-          <Text style={styles.loginText}>
-            Already have an account? <Text style={styles.loginTextBold}>Sign in</Text>
-          </Text>
+          <ThemedText style={styles.loginText}>
+            Already have an account? <ThemedText style={[styles.loginTextBold, { color: tintColor }]}>Sign in</ThemedText>
+          </ThemedText>
         </TouchableOpacity>
-      </View>
+      </ThemedView>
     </KeyboardAvoidingView>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   formContainer: {
     flex: 1,
@@ -145,7 +170,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 32,
     textAlign: 'center',
   },
@@ -156,13 +180,11 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
     height: 50,
     borderRadius: 8,
     justifyContent: 'center',
@@ -172,7 +194,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -182,10 +203,8 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
-    color: '#666',
   },
   loginTextBold: {
-    color: '#007AFF',
     fontWeight: '600',
   },
 }); 

@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -12,11 +10,19 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../services/api';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'icon');
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -38,16 +44,21 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor }]}
     >
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+      <ThemedView style={styles.formContainer}>
+        <ThemedText type="title" style={styles.title}>Welcome Back</ThemedText>
+        <ThemedText type="subtitle" style={styles.subtitle}>Sign in to continue</ThemedText>
 
-        <View style={styles.inputContainer}>
+        <ThemedView style={styles.inputContainer}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Email"
+            placeholderTextColor={borderColor}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -55,24 +66,29 @@ export default function LoginScreen() {
             editable={!loading}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor,
+              color: textColor,
+              backgroundColor: backgroundColor
+            }]}
             placeholder="Password"
+            placeholderTextColor={borderColor}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             editable={!loading}
           />
-        </View>
+        </ThemedView>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, { backgroundColor: tintColor }, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={backgroundColor} />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>Sign In</ThemedText>
           )}
         </TouchableOpacity>
 
@@ -81,11 +97,11 @@ export default function LoginScreen() {
           onPress={() => router.push('/signup')}
           disabled={loading}
         >
-          <Text style={styles.signupText}>
-            Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
-          </Text>
+          <ThemedText style={styles.signupText}>
+            Don't have an account? <ThemedText style={[styles.signupTextBold, { color: tintColor }]}>Sign up</ThemedText>
+          </ThemedText>
         </TouchableOpacity>
-      </View>
+      </ThemedView>
     </KeyboardAvoidingView>
   );
 }
@@ -93,7 +109,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   formContainer: {
     flex: 1,
@@ -108,7 +123,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 32,
     textAlign: 'center',
   },
@@ -119,13 +133,11 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
     height: 50,
     borderRadius: 8,
     justifyContent: 'center',
@@ -135,7 +147,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -145,10 +156,8 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 16,
-    color: '#666',
   },
   signupTextBold: {
-    color: '#007AFF',
     fontWeight: '600',
   },
 }); 
