@@ -1,30 +1,40 @@
 import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme();
+
   return (
-    <Tabs screenOptions={{
-      tabBarActiveTintColor: '#007AFF',
-    }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: colorScheme === 'dark' ? '#666' : '#999',
+        tabBarStyle: {
+          backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+        },
+        headerStyle: {
+          backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+        },
+        headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
+      }}
+    >
       <Tabs.Screen
-        name="tests"
+        name="index"
         options={{
-          title: 'Tests',
-          tabBarIcon: ({ color }) => <FontAwesome name="list" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="videos"
-        options={{
-          title: 'Video Courses',
-          tabBarIcon: ({ color }) => <FontAwesome name="video-camera" size={24} color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <FontAwesome name="user" size={24} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

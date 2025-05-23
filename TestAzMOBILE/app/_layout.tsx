@@ -1,55 +1,32 @@
-<<<<<<< HEAD
-import { Stack } from 'expo-router';
+import { Tabs, Stack, useRouter } from 'expo-router';
+import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Layout() {
+  const colorScheme = useColorScheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const user = await AsyncStorage.getItem('user');
+      if (!user) {
+        router.replace('/login');
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+    }
+  };
+
   return (
     <Stack>
-      <Stack.Screen 
-        name="index" 
-        options={{ 
-          title: 'Main Menu',
-          headerShown: true 
-        }} 
-      />
-      <Stack.Screen 
-        name="create-test" 
-        options={{ 
-          title: 'Create Test',
-          headerShown: true,
-          headerBackTitle: 'Back'
-        }} 
-      />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
-} 
-=======
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
 }
->>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893

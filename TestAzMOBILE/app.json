@@ -1,21 +1,5 @@
 {
   "expo": {
-<<<<<<< HEAD
-    "name": "TestAz",
-    "slug": "testaz-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-=======
     "name": "TestAzMOBILE",
     "slug": "TestAzMOBILE",
     "version": "1.0.0",
@@ -24,27 +8,11 @@
     "scheme": "testazmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
->>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-<<<<<<< HEAD
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-router"
-    ],
-    "scheme": "testaz"
-  }
-} 
-=======
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
@@ -71,5 +39,4 @@
       "typedRoutes": true
     }
   }
-}
->>>>>>> 273d2c4ea41dcd5e869e2e719acaaba467a4c893
+} 
