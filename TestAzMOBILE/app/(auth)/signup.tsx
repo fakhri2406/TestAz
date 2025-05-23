@@ -10,10 +10,11 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router'; // ✅ Correct hook import
 import { api } from '../../services/api';
 
 export default function SignupScreen() {
+  const router = useRouter(); // ✅ Correct initialization
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
@@ -35,12 +36,12 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await api.signup({ email, password, name, surname });
-      Alert.alert('Success', 'Account created successfully', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/login'),
-        },
-      ]);
+
+      // Automatically log in after successful signup
+      await api.login({ email, password });
+
+      // ✅ Navigate to the tests tab
+      router.replace('/(tabs)/tests');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Signup failed');
     } finally {
@@ -124,6 +125,7 @@ export default function SignupScreen() {
     </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
