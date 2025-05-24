@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { api } from '../../services/api';
+import { api } from '@/services/api';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -35,18 +35,26 @@ export default function TestsScreen() {
 
   const checkAdminStatus = async () => {
     try {
-      const user = await api.getCurrentUser();
-      setIsAdmin(user.data.isAdmin);
+      const response = await api.getCurrentUser();
+      setIsAdmin(response?.data?.isAdmin || false);
     } catch (error) {
       console.error('Error checking admin status:', error);
+      setIsAdmin(false);
     }
   };
 
   const handleTestPress = (test) => {
-    router.push({
-      pathname: '/test/[id]',
-      params: { id: test.id }
-    });
+    if (isAdmin) {
+      router.push({
+        pathname: '/test/[id]',
+        params: { id: test.id }
+      });
+    } else {
+      router.push({
+        pathname: '/test/take/[id]',
+        params: { id: test.id }
+      });
+    }
   };
 
   const handleAddTest = () => {
