@@ -13,6 +13,7 @@ import { api } from '../../services/api';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { translations } from '@/constants/translations';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -26,7 +27,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(translations.error, translations.fillAllFields);
       return;
     }
 
@@ -35,7 +36,7 @@ export default function LoginScreen() {
       await api.login({ email, password });
       router.replace('/(tabs)');
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Login failed');
+      Alert.alert(translations.error, error instanceof Error ? error.message : translations.loginFailed);
     } finally {
       setLoading(false);
     }
@@ -47,8 +48,8 @@ export default function LoginScreen() {
       style={[styles.container, { backgroundColor }]}
     >
       <ThemedView style={styles.formContainer}>
-        <ThemedText type="title" style={styles.title}>Welcome Back</ThemedText>
-        <ThemedText type="subtitle" style={styles.subtitle}>Sign in to continue</ThemedText>
+        <ThemedText type="title" style={styles.title}>{translations.welcomeBack}</ThemedText>
+        <ThemedText type="subtitle" style={styles.subtitle}>{translations.signInToContinue}</ThemedText>
 
         <ThemedView style={styles.inputContainer}>
           <TextInput
@@ -57,7 +58,7 @@ export default function LoginScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Email"
+            placeholder={translations.email}
             placeholderTextColor={borderColor}
             value={email}
             onChangeText={setEmail}
@@ -71,7 +72,7 @@ export default function LoginScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Password"
+            placeholder={translations.password}
             placeholderTextColor={borderColor}
             value={password}
             onChangeText={setPassword}
@@ -88,7 +89,7 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color={backgroundColor} />
           ) : (
-            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>Sign In</ThemedText>
+            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>{translations.signIn}</ThemedText>
           )}
         </TouchableOpacity>
 
@@ -98,7 +99,7 @@ export default function LoginScreen() {
           disabled={loading}
         >
           <ThemedText style={styles.signupText}>
-            Don't have an account? <ThemedText style={[styles.signupTextBold, { color: tintColor }]}>Sign up</ThemedText>
+            {translations.dontHaveAccount} <ThemedText style={[styles.signupTextBold, { color: tintColor }]}>{translations.signUp}</ThemedText>
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

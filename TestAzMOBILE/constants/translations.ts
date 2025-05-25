@@ -1,0 +1,63 @@
+export const translations = {
+  // Common
+  error: 'Xəta',
+  loading: 'Yüklənir...',
+  success: 'Uğurlu',
+  
+  // Auth
+  welcomeBack: 'Xoş gəldiniz',
+  signInToContinue: 'Davam etmək üçün daxil olun',
+  email: 'E-poçt',
+  password: 'Şifrə',
+  signIn: 'Daxil ol',
+  dontHaveAccount: 'Hesabınız yoxdur?',
+  signUp: 'Qeydiyyatdan keçin',
+  createAccount: 'Hesab yaradın',
+  signUpToGetStarted: 'Başlamaq üçün qeydiyyatdan keçin',
+  name: 'Ad',
+  surname: 'Soyad',
+  confirmPassword: 'Şifrəni təsdiqləyin',
+  alreadyHaveAccount: 'Artıq hesabınız var?',
+  fillAllFields: 'Bütün sahələri doldurun',
+  passwordsDoNotMatch: 'Şifrələr uyğun gəlmir',
+  loginFailed: 'Daxil olmaq alınmadı',
+  signupFailed: 'Qeydiyyat uğursuz oldu',
+
+  // Tests
+  tests: 'Testlər',
+  addNewTest: 'Yeni Test Əlavə Et',
+  premium: 'Premium',
+  testDescription: 'Test təsviri',
+  failedToLoadTests: 'Testləri yükləmək alınmadı',
+
+  // Videos
+  videos: 'Video Kurslar',
+  addNewVideo: 'Yeni Video Əlavə Et',
+  duration: 'Müddət',
+  failedToLoadCourses: 'Kursları yükləmək alınmadı',
+
+  // Profile
+  profile: 'Profil',
+  settings: 'Parametrlər',
+  helpAndSupport: 'Kömək və Dəstək',
+  logout: 'Çıxış',
+  logoutConfirmation: 'Çıxış etmək istədiyinizə əminsiniz?',
+  cancel: 'Ləğv et',
+  confirm: 'Təsdiqlə',
+  user: 'İstifadəçi',
+
+  // Navigation
+  home: 'Ana Səhifə',
+  tests: 'Testlər',
+  videos: 'Video Kurslar',
+  profile: 'Profil',
+
+  // Home
+  welcomeToTestAz: 'TestAz-a xoş gəldiniz',
+  learningJourneyStarts: 'Öyrənmə səfəriniz buradan başlayır',
+
+  // Not Found
+  oops: 'Ups!',
+  screenDoesNotExist: 'Bu səhifə mövcud deyil',
+  goToHome: 'Ana səhifəyə qayıt!',
+}; 

@@ -1,86 +1,103 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mockTests } from '../../constants/mockData';
+import { api } from '@/services/api';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
-
-interface Test {
-  id: string;
-  title: string;
-  description: string;
-  isPremium: boolean;
-}
+import { translations } from '@/constants/translations';
 
 export default function TestsScreen() {
-  const [tests, setTests] = useState<Test[]>([]);
+  const [tests, setTests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
-  const cardBackgroundColor = useThemeColor({}, 'background');
+  const cardBackgroundColor = useThemeColor({}, 'card');
 
   useEffect(() => {
     loadTests();
     checkAdminStatus();
   }, []);
 
-  const checkAdminStatus = async () => {
-    const userStr = await AsyncStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setIsAdmin(user.isAdmin);
-    }
-  };
-
   const loadTests = async () => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setTests(mockTests);
+      const response = await api.getTests();
+      setTests(response.data);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load tests');
+      console.error('Error loading tests:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleTestPress = (test: Test) => {
-    router.push(`/test/${test.id}`);
+  const checkAdminStatus = async () => {
+    try {
+      const response = await api.getCurrentUser();
+      setIsAdmin(response?.data?.isAdmin || false);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    }
   };
 
-  const renderTestItem = ({ item }: { item: Test }) => (
-    <TouchableOpacity
-      style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
-      onPress={() => handleTestPress(item)}
-    >
-      <ThemedView style={styles.testHeader}>
-        <ThemedText type="defaultSemiBold" style={styles.testTitle}>{item.title}</ThemedText>
-        {item.isPremium && (
-          <ThemedView style={styles.premiumBadge}>
-            <ThemedText style={styles.premiumText}>Premium</ThemedText>
-          </ThemedView>
-        )}
+  const handleTestPress = (test) => {
+    if (isAdmin) {
+      router.push({
+        pathname: '/test/[id]',
+        params: { id: test.id }
+      });
+    } else {
+      router.push({
+        pathname: '/test/take/[id]',
+        params: { id: test.id }
+      });
+    }
+  };
+
+  const handleAddTest = () => {
+    router.push('/test/new');
+  };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={tintColor} />
       </ThemedView>
-      <ThemedText type="default" style={styles.testDescription}>{item.description}</ThemedText>
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
       <FlatList
         data={tests}
-        renderItem={renderTestItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
+            onPress={() => handleTestPress(item)}
+          >
+            <ThemedView style={styles.testHeader}>
+              <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+              <ThemedText type="subtitle" style={styles.testScore}>
+                {translations.score}: {item.score || 0}
+              </ThemedText>
+            </ThemedView>
+            <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+          </TouchableOpacity>
+        )}
         contentContainerStyle={styles.list}
       />
       {isAdmin && (
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: tintColor }]}
-          onPress={() => router.push('/test/create')}
+          onPress={handleAddTest}
         >
-          <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>Add New Test</ThemedText>
+          <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+            {translations.addNewTest}
+          </ThemedText>
         </TouchableOpacity>
       )}
     </ThemedView>
@@ -91,18 +108,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   list: {
     padding: 16,
   },
   testItem: {
     padding: 16,
     borderRadius: 8,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: 16,
   },
   testHeader: {
     flexDirection: 'row',
@@ -112,27 +129,21 @@ const styles = StyleSheet.create({
   },
   testTitle: {
     fontSize: 18,
+    fontWeight: '600',
+  },
+  testScore: {
+    fontSize: 16,
   },
   testDescription: {
-    opacity: 0.8,
-  },
-  premiumBadge: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  premiumText: {
-    color: '#000',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 14,
   },
   addButton: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    padding: 16,
-    borderRadius: 30,
+    bottom: 24,
+    right: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -140,6 +151,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   addButtonText: {
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

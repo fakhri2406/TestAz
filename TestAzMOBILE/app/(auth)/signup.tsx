@@ -8,19 +8,18 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { api } from '../../services/api';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { translations } from '@/constants/translations';
 
 export default function SignupScreen() {
-  const router = useRouter();
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
@@ -29,23 +28,17 @@ export default function SignupScreen() {
   const borderColor = useThemeColor({}, 'icon');
 
   const handleSignup = async () => {
-    if (!name || !surname || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    if (!name || !surname || !email || !password) {
+      Alert.alert(translations.error, translations.fillAllFields);
       return;
     }
 
     setLoading(true);
     try {
-      await api.signup({ email, password, name, surname });
-      await api.login({ email, password });
-      router.replace('/(tabs)/tests');
+      await api.signup({ name, surname, email, password });
+      router.replace('/(tabs)');
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Signup failed');
+      Alert.alert(translations.error, error instanceof Error ? error.message : translations.signupFailed);
     } finally {
       setLoading(false);
     }
@@ -57,8 +50,8 @@ export default function SignupScreen() {
       style={[styles.container, { backgroundColor }]}
     >
       <ThemedView style={styles.formContainer}>
-        <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
-        <ThemedText type="subtitle" style={styles.subtitle}>Sign up to get started</ThemedText>
+        <ThemedText type="title" style={styles.title}>{translations.createAccount}</ThemedText>
+        <ThemedText type="subtitle" style={styles.subtitle}>{translations.signInToContinue}</ThemedText>
 
         <ThemedView style={styles.inputContainer}>
           <TextInput
@@ -67,10 +60,11 @@ export default function SignupScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Name"
+            placeholder={translations.name}
             placeholderTextColor={borderColor}
             value={name}
             onChangeText={setName}
+            autoCapitalize="words"
             editable={!loading}
           />
           <TextInput
@@ -79,10 +73,11 @@ export default function SignupScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Surname"
+            placeholder={translations.surname}
             placeholderTextColor={borderColor}
             value={surname}
             onChangeText={setSurname}
+            autoCapitalize="words"
             editable={!loading}
           />
           <TextInput
@@ -91,7 +86,7 @@ export default function SignupScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Email"
+            placeholder={translations.email}
             placeholderTextColor={borderColor}
             value={email}
             onChangeText={setEmail}
@@ -105,23 +100,10 @@ export default function SignupScreen() {
               color: textColor,
               backgroundColor: backgroundColor
             }]}
-            placeholder="Password"
+            placeholder={translations.password}
             placeholderTextColor={borderColor}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
-          <TextInput
-            style={[styles.input, { 
-              borderColor,
-              color: textColor,
-              backgroundColor: backgroundColor
-            }]}
-            placeholder="Confirm Password"
-            placeholderTextColor={borderColor}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
             secureTextEntry
             editable={!loading}
           />
@@ -135,7 +117,7 @@ export default function SignupScreen() {
           {loading ? (
             <ActivityIndicator color={backgroundColor} />
           ) : (
-            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>Create Account</ThemedText>
+            <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>{translations.createAccount}</ThemedText>
           )}
         </TouchableOpacity>
 
@@ -145,7 +127,7 @@ export default function SignupScreen() {
           disabled={loading}
         >
           <ThemedText style={styles.loginText}>
-            Already have an account? <ThemedText style={[styles.loginTextBold, { color: tintColor }]}>Sign in</ThemedText>
+            {translations.alreadyHaveAccount} <ThemedText style={[styles.loginTextBold, { color: tintColor }]}>{translations.signIn}</ThemedText>
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

@@ -148,6 +148,24 @@ class ApiService {
             method: 'DELETE',
         });
     }
+
+    // Test endpoints
+    async getTests() {
+        return this.get(API_CONFIG.ENDPOINTS.TESTS);
+    }
+
+    async getTestById(id: number) {
+        return this.get(API_CONFIG.ENDPOINTS.TEST_BY_ID(id));
+    }
+
+    // Video endpoints
+    async getVideos() {
+        return this.get(API_CONFIG.ENDPOINTS.VIDEO_COURSES);
+    }
+
+    async getVideoById(id: number) {
+        return this.get(API_CONFIG.ENDPOINTS.VIDEO_COURSE_BY_ID(id));
+    }
 }
 
 export const apiService = new ApiService();
