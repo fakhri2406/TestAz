@@ -73,4 +73,15 @@ export const translations = {
   emailSupport: 'E-poçt dəstəyi',
   liveChat: 'Canlı söhbət',
   phoneSupport: 'Telefon dəstəyi',
+  howToTakeTests: 'Testləri necə həll edə bilərəm?',
+  howToTakeTestsAnswer: 'Testlər bölməsinə daxil olun və istədiyiniz testi seçin. Hər bir sual üçün bir cavab seçin və testi tamamladıqdan sonra nəticələrinizi görə bilərsiniz.',
+  howToWatchVideos: 'Video kursları necə izləyə bilərəm?',
+  howToWatchVideosAnswer: 'Video kurslar bölməsinə daxil olun və istədiyiniz kursu seçin. Kursun məzmununu izləyə və öyrənə bilərsiniz.',
+  forgotPassword: 'Şifrəmi unutdum, nə etməliyəm?',
+  forgotPasswordAnswer: 'Giriş səhifəsində "Şifrəni unutdum" düyməsini klikləyin və e-poçt ünvanınızı daxil edin. Şifrə bərpası üçün təlimatlar e-poçt ünvanınıza göndəriləcək.',
+  selectLanguage: 'Dil seçin',
+
+  // Settings
+  parameters: 'Parametrlər',
+  help: 'Kömək',
 }; 
