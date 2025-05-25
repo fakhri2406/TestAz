@@ -22,6 +22,8 @@ export const API_CONFIG = {
         USERS: '/api/user',
         USER_LOGIN: '/api/auth/login',
         USER_REGISTER: '/api/auth/signup',
+        USER_BY_EMAIL: (email: string) => `/api/auth/user/${encodeURIComponent(email)}`,
+        USER_BY_ID: (id: string) => `/api/auth/user/id/${encodeURIComponent(id)}`,
         
         // Test endpoints
         TESTS: '/api/test',

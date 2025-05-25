@@ -50,4 +50,20 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Login successful", user.Id, user.Email });
     }
 
+    [HttpGet("user/id/{id}")]
+    public async Task<IActionResult> GetUserById(Guid id)
+    {
+        var user = await _userRepo.GetByIdAsync(id);
+        if (user == null)
+            return NotFound("User not found");
+
+        return Ok(new
+        {
+            user.Id,
+            user.Email,
+            user.Name,
+            user.Surname,
+            user.Role
+        });
+    }
 }

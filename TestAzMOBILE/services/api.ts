@@ -188,6 +188,14 @@ interface AuthResponse {
   email?: string;
 }
 
+interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  surname: string;
+  role: string;
+}
+
 export const api = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await apiService.post<AuthResponse>(API_CONFIG.ENDPOINTS.USER_LOGIN, data);
@@ -213,6 +221,39 @@ export const api = {
   async getCurrentUser(): Promise<any> {
     const user = await AsyncStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  },
+
+  async getUserById(id: string): Promise<UserData> {
+    console.log('Getting user by ID:', id);
+    try {
+      // Format the ID as a proper GUID
+      const formattedId = id.replace(/[{}]/g, '').toLowerCase();
+      console.log('Formatted ID:', formattedId);
+      
+      const url = API_CONFIG.ENDPOINTS.USER_BY_ID(formattedId);
+      console.log('Request URL:', url);
+      
+      const response = await apiService.get<UserData>(url);
+      console.log('User data response:', response);
+      
+      if (!response.data) {
+        console.error('No user data in response');
+        throw new Error('No user data received');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error in getUserById:', error);
+      if (error instanceof ApiError) {
+        console.error('API Error details:', {
+          status: error.status,
+          message: error.message,
+          responseData: error.responseData
+        });
+        throw new Error(`Failed to fetch user data: ${error.message}`);
+      }
+      throw error;
+    }
   },
 
   async getTests() {
