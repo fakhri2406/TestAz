@@ -39,6 +39,12 @@ export const translations = {
   // Profile
   profile: 'Profil',
   settings: 'Parametrlər',
+  notifications: 'Bildirişlər',
+  language: 'Dil',
+  darkMode: 'Qaranlıq rejim',
+  account: 'Hesab',
+  changePassword: 'Şifrəni dəyişdir',
+  changeEmail: 'E-poçtu dəyişdir',
   helpAndSupport: 'Kömək və Dəstək',
   logout: 'Çıxış',
   logoutConfirmation: 'Çıxış etmək istədiyinizə əminsiniz?',
@@ -60,4 +66,11 @@ export const translations = {
   oops: 'Ups!',
   screenDoesNotExist: 'Bu səhifə mövcud deyil',
   goToHome: 'Ana səhifəyə qayıt!',
+
+  // Help
+  frequentlyAskedQuestions: 'Tez-tez soruşulan suallar',
+  contactSupport: 'Dəstək ilə əlaqə',
+  emailSupport: 'E-poçt dəstəyi',
+  liveChat: 'Canlı söhbət',
+  phoneSupport: 'Telefon dəstəyi',
 }; 

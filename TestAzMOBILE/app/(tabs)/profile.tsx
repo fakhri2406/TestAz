@@ -72,7 +72,10 @@ export default function ProfileScreen() {
       </ThemedView>
 
       <ThemedView style={styles.section}>
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]} onPress={() => {}}>
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: borderColor }]} 
+          onPress={() => router.push('/settings/parameters')}
+        >
           <Ionicons name="settings-outline" size={24} color={tintColor} />
           <ThemedText style={styles.menuText}>
             {translations.settings}
@@ -80,7 +83,10 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={24} color={borderColor} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]} onPress={() => {}}>
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: borderColor }]} 
+          onPress={() => router.push('/settings/help')}
+        >
           <Ionicons name="help-circle-outline" size={24} color={tintColor} />
           <ThemedText style={styles.menuText}>
             {translations.helpAndSupport}
