@@ -214,4 +214,12 @@ export const api = {
     const user = await AsyncStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
+
+  async getTests() {
+    return apiService.getTests();
+  },
+
+  async getTestById(id: number) {
+    return apiService.getTestById(id);
+  }
 }; 

@@ -71,25 +71,31 @@ export default function TestsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <FlatList
-        data={tests}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
-            onPress={() => handleTestPress(item)}
-          >
-            <ThemedView style={styles.testHeader}>
-              <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
-              <ThemedText type="subtitle" style={styles.testScore}>
-                {translations.score}: {item.score || 0}
-              </ThemedText>
-            </ThemedView>
-            <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.list}
-      />
+      {tests.length === 0 ? (
+        <ThemedView style={styles.emptyContainer}>
+          <ThemedText style={styles.emptyText}>Testlər mövcud deyil</ThemedText>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={tests}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
+              onPress={() => handleTestPress(item)}
+            >
+              <ThemedView style={styles.testHeader}>
+                <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+                <ThemedText type="subtitle" style={styles.testScore}>
+                  {translations.score}: {item.score || 0}
+                </ThemedText>
+              </ThemedView>
+              <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.list}
+        />
+      )}
       {isAdmin && (
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: tintColor }]}
@@ -112,6 +118,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    textAlign: 'center',
   },
   list: {
     padding: 16,
