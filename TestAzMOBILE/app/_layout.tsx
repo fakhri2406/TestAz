@@ -9,16 +9,23 @@ export default function Layout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (!isLoading && initialRoute) {
+      router.replace(initialRoute);
+    }
+  }, [isLoading, initialRoute]);
+
   const checkAuth = async () => {
     try {
       const user = await AsyncStorage.getItem('user');
       if (!user) {
-        router.replace('/(auth)/login');
+        setInitialRoute('/(auth)/login');
       }
     } catch (error) {
       console.error('Error checking auth:', error);
