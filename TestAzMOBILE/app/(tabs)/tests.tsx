@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -35,8 +36,11 @@ export default function TestsScreen() {
 
   const checkAdminStatus = async () => {
     try {
-      const response = await api.getCurrentUser();
-      setIsAdmin(response?.data?.isAdmin || false);
+      const currentUser = await api.getCurrentUser();
+      if (currentUser?.id) {
+        const userData = await api.getUserById(currentUser.id);
+        setIsAdmin(userData.role === 'Admin');
+      }
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
@@ -73,38 +77,52 @@ export default function TestsScreen() {
     <ThemedView style={styles.container}>
       {tests.length === 0 ? (
         <ThemedView style={styles.emptyContainer}>
-          <ThemedText style={styles.emptyText}>Testlər mövcud deyil</ThemedText>
-        </ThemedView>
-      ) : (
-        <FlatList
-          data={tests}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
+          <ThemedText style={styles.emptyText}>Mövcud test tapılmadı</ThemedText>
+          {isAdmin && (
             <TouchableOpacity
-              style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
-              onPress={() => handleTestPress(item)}
+              style={[styles.addButton, { backgroundColor: tintColor }]}
+              onPress={handleAddTest}
             >
-              <ThemedView style={styles.testHeader}>
-                <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
-                <ThemedText type="subtitle" style={styles.testScore}>
-                  {translations.score}: {item.score || 0}
-                </ThemedText>
-              </ThemedView>
-              <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+              <Ionicons name="add" size={24} color={backgroundColor} />
+              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                {translations.addNewTest}
+              </ThemedText>
             </TouchableOpacity>
           )}
-          contentContainerStyle={styles.list}
-        />
-      )}
-      {isAdmin && (
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: tintColor }]}
-          onPress={handleAddTest}
-        >
-          <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-            {translations.addNewTest}
-          </ThemedText>
-        </TouchableOpacity>
+        </ThemedView>
+      ) : (
+        <>
+          <FlatList
+            data={tests}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => handleTestPress(item)}
+              >
+                <ThemedView style={styles.testHeader}>
+                  <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+                  <ThemedText type="subtitle" style={styles.testScore}>
+                    {translations.score}: {item.score || 0}
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={styles.list}
+          />
+          {isAdmin && (
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: tintColor }]}
+              onPress={handleAddTest}
+            >
+              <Ionicons name="add" size={24} color={backgroundColor} />
+              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                {translations.addNewTest}
+              </ThemedText>
+            </TouchableOpacity>
+          )}
+        </>
       )}
     </ThemedView>
   );
@@ -123,10 +141,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   emptyText: {
     fontSize: 18,
     textAlign: 'center',
+    marginBottom: 20,
   },
   list: {
     padding: 16,
@@ -156,6 +176,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
@@ -168,5 +190,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
   },
 }); 
