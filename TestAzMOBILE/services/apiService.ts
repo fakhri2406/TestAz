@@ -75,7 +75,23 @@ class ApiService {
   }
 
   async getTests() {
-    return this.get(API_CONFIG.ENDPOINTS.TESTS);
+    try {
+      console.log('Fetching tests...');
+      const response = await this.get(API_CONFIG.ENDPOINTS.TESTS);
+      console.log('Tests response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error fetching tests:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
   }
 
   async getTest(id: string) {

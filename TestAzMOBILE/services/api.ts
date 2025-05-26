@@ -108,7 +108,7 @@ export const api = {
   getTests: async (): Promise<Test[]> => {
     try {
       const response = await apiService.getTests();
-      return response.data || [];
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Get tests error:', error);
       throw error;
