@@ -1,5 +1,6 @@
 import { API_CONFIG } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService } from './apiService';
 
 // API Response type
 interface ApiResponse<T> {
@@ -21,155 +22,6 @@ class ApiError extends Error {
     }
 }
 
-class ApiService {
-    private baseUrl: string;
-
-    constructor() {
-        this.baseUrl = API_CONFIG.BASE_URL;
-        console.log('API Service initialized with base URL:', this.baseUrl);
-    }
-
-    private async fetchWithConfig<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-        const url = `${this.baseUrl}${endpoint}`;
-        console.log('Making request to:', url);
-        
-        const defaultHeaders = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json, application/problem+json',
-        };
-
-        const config = {
-            ...options,
-            headers: {
-                ...defaultHeaders,
-                ...options.headers,
-            },
-        };
-
-        try {
-            console.log('Request config:', {
-                method: config.method || 'GET',
-                headers: config.headers,
-                body: config.body ? JSON.parse(config.body as string) : undefined
-            });
-
-            const response = await fetch(url, config);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-            
-            let data;
-            const contentType = response.headers.get('content-type');
-            console.log('Response content-type:', contentType);
-
-            try {
-                const text = await response.text();
-                console.log('Raw response text:', text);
-
-                if (contentType && (contentType.includes('application/json') || contentType.includes('application/problem+json'))) {
-                    data = JSON.parse(text);
-                    console.log('Parsed JSON response:', data);
-                } else {
-                    throw new ApiError(
-                        `Invalid response format. Expected JSON but got ${contentType || 'unknown content type'}`,
-                        response.status,
-                        text
-                    );
-                }
-            } catch (parseError) {
-                console.error('Error parsing response:', parseError);
-                throw new ApiError(
-                    'Failed to parse API response',
-                    response.status,
-                    parseError instanceof Error ? parseError.message : 'Unknown parsing error'
-                );
-            }
-
-            if (!response.ok) {
-                // Handle problem+json format
-                if (data?.type === 'https://tools.ietf.org/html/rfc7231#section-6.5.1') {
-                    throw new ApiError(
-                        data.detail || data.title || 'API request failed',
-                        response.status,
-                        data
-                    );
-                }
-                throw new ApiError(
-                    data?.message || data?.detail || 'API request failed',
-                    response.status,
-                    data
-                );
-            }
-
-            return {
-                data,
-                status: response.status
-            };
-        } catch (error) {
-            console.error('API request failed:', error);
-            if (error instanceof ApiError) {
-                throw error;
-            }
-            if (error instanceof TypeError && error.message.includes('Network request failed')) {
-                console.error('Network error details:', {
-                    url,
-                    error: error.message,
-                    stack: error.stack
-                });
-                throw new ApiError('Network error: Please check your connection and API URL', 0);
-            }
-            throw new ApiError('An unexpected error occurred', 500);
-        }
-    }
-
-    // Generic GET request
-    async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-        return this.fetchWithConfig<T>(endpoint);
-    }
-
-    // Generic POST request
-    async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-        return this.fetchWithConfig<T>(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(data),
-        });
-    }
-
-    // Generic PUT request
-    async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-        return this.fetchWithConfig<T>(endpoint, {
-            method: 'PUT',
-            body: JSON.stringify(data),
-        });
-    }
-
-    // Generic DELETE request
-    async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-        return this.fetchWithConfig<T>(endpoint, {
-            method: 'DELETE',
-        });
-    }
-
-    // Test endpoints
-    async getTests() {
-        return this.get(API_CONFIG.ENDPOINTS.TESTS);
-    }
-
-    async getTestById(id: number) {
-        return this.get(API_CONFIG.ENDPOINTS.TEST_BY_ID(id));
-    }
-
-    // Video endpoints
-    async getVideos() {
-        return this.get(API_CONFIG.ENDPOINTS.VIDEO_COURSES);
-    }
-
-    async getVideoById(id: number) {
-        return this.get(API_CONFIG.ENDPOINTS.VIDEO_COURSE_BY_ID(id));
-    }
-}
-
-export const apiService = new ApiService();
-
 interface LoginRequest {
   email: string;
   password: string;
@@ -184,8 +36,14 @@ interface SignupRequest {
 
 interface AuthResponse {
   message: string;
-  id?: string;
-  email?: string;
+  token?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    surname: string;
+    role: string;
+  };
 }
 
 interface UserData {
@@ -196,71 +54,92 @@ interface UserData {
   role: string;
 }
 
+interface Test {
+  id: string;
+  title: string;
+  description: string;
+  score?: number;
+}
+
 export const api = {
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await apiService.post<AuthResponse>(API_CONFIG.ENDPOINTS.USER_LOGIN, data);
-    if (response.data) {
-      await AsyncStorage.setItem('user', JSON.stringify(response.data));
-      return response.data;
-    }
-    throw new Error('Login failed');
-  },
-
-  async signup(data: SignupRequest): Promise<AuthResponse> {
-    const response = await apiService.post<AuthResponse>(API_CONFIG.ENDPOINTS.USER_REGISTER, data);
-    if (response.data) {
-      return response.data;
-    }
-    throw new Error('Signup failed');
-  },
-
-  async logout(): Promise<void> {
-    await AsyncStorage.removeItem('user');
-  },
-
-  async getCurrentUser(): Promise<any> {
-    const user = await AsyncStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  },
-
-  async getUserById(id: string): Promise<UserData> {
-    console.log('Getting user by ID:', id);
+  login: async (credentials: LoginRequest) => {
     try {
-      // Format the ID as a proper GUID
-      const formattedId = id.replace(/[{}]/g, '').toLowerCase();
-      console.log('Formatted ID:', formattedId);
-      
-      const url = API_CONFIG.ENDPOINTS.USER_BY_ID(formattedId);
-      console.log('Request URL:', url);
-      
-      const response = await apiService.get<UserData>(url);
-      console.log('User data response:', response);
-      
-      if (!response.data) {
-        console.error('No user data in response');
-        throw new Error('No user data received');
-      }
-      
-      return response.data;
+      const response = await apiService.login(credentials.email, credentials.password);
+      return response;
     } catch (error) {
-      console.error('Error in getUserById:', error);
-      if (error instanceof ApiError) {
-        console.error('API Error details:', {
-          status: error.status,
-          message: error.message,
-          responseData: error.responseData
-        });
-        throw new Error(`Failed to fetch user data: ${error.message}`);
-      }
+      console.error('Login error:', error);
       throw error;
     }
   },
 
-  async getTests() {
-    return apiService.getTests();
+  signup: async (userData: SignupRequest) => {
+    try {
+      const response = await apiService.signup(userData);
+      return response;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
   },
 
-  async getTestById(id: number) {
-    return apiService.getTestById(id);
+  logout: async (): Promise<void> => {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+  },
+
+  getCurrentUser: async (): Promise<UserData | null> => {
+    const user = await AsyncStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+
+  getUserById: async (id: string): Promise<UserData> => {
+    try {
+      const userData = await apiService.getUserById(id);
+      if (!userData) {
+        throw new Error('User not found');
+      }
+      return userData;
+    } catch (error) {
+      console.error('Error in getUserById:', error);
+      throw error;
+    }
+  },
+
+  getTests: async (): Promise<Test[]> => {
+    try {
+      const response = await apiService.getTests();
+      return response.data || [];
+    } catch (error) {
+      console.error('Get tests error:', error);
+      throw error;
+    }
+  },
+
+  getTest: async (id: string) => {
+    try {
+      const response = await apiService.getTest(id);
+      return response;
+    } catch (error) {
+      console.error('Get test error:', error);
+      throw error;
+    }
+  },
+
+  createTest: async (testData: {
+    title: string;
+    description: string;
+    questions: {
+      text: string;
+      options: string[];
+      correctOptionIndex: number;
+    }[];
+  }): Promise<ApiResponse<any>> => {
+    try {
+      const response = await apiService.createTest(testData);
+      return response;
+    } catch (error) {
+      console.error('Create test error:', error);
+      throw error;
+    }
   }
 }; 

@@ -8,8 +8,15 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 
+interface Test {
+  id: string;
+  title: string;
+  description: string;
+  score?: number;
+}
+
 export default function TestsScreen() {
-  const [tests, setTests] = useState([]);
+  const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -25,10 +32,11 @@ export default function TestsScreen() {
 
   const loadTests = async () => {
     try {
-      const response = await api.getTests();
-      setTests(response.data);
+      const testsData = await api.getTests();
+      setTests(testsData);
     } catch (error) {
       console.error('Error loading tests:', error);
+      setTests([]);
     } finally {
       setLoading(false);
     }
@@ -47,7 +55,7 @@ export default function TestsScreen() {
     }
   };
 
-  const handleTestPress = (test) => {
+  const handleTestPress = (test: Test) => {
     if (isAdmin) {
       router.push({
         pathname: '/test/[id]',

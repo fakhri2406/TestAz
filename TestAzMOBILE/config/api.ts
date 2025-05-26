@@ -28,6 +28,7 @@ export const API_CONFIG = {
         // Test endpoints
         TESTS: '/api/test',
         TEST_BY_ID: (id: number) => `/api/test/${id}`,
+        CREATE_TEST: '/api/test/create',
         
         // Video Course endpoints
         VIDEO_COURSES: '/api/videocourse',

@@ -11,10 +11,12 @@ namespace TestAzAPI.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserRepository _userRepo;
+    private readonly JwtService _jwtService;
 
-    public AuthController(IUserRepository userRepo)
+    public AuthController(IUserRepository userRepo, JwtService jwtService)
     {
         _userRepo = userRepo;
+        _jwtService = jwtService;
     }
 
     [HttpPost("signup")]
@@ -47,7 +49,19 @@ public class AuthController : ControllerBase
         if (user == null || !PasswordService.VerifyPassword(login.Password, user.PasswordHash, user.PasswordSalt))
             return Unauthorized("Invalid credentials");
 
-        return Ok(new { message = "Login successful", user.Id, user.Email });
+        var token = _jwtService.GenerateToken(user);
+
+        return Ok(new { 
+            message = "Login successful", 
+            token,
+            user = new {
+                id = user.Id,
+                email = user.Email,
+                name = user.Name,
+                surname = user.Surname,
+                role = user.Role
+            }
+        });
     }
 
     [HttpGet("user/id/{id}")]
