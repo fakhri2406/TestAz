@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Alert } from 'react-native';
+import { StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 interface TestResultDetail {
   id: string;
@@ -61,52 +63,78 @@ export default function TestResultDetailScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
-        <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
-          <ThemedText style={styles.scoreText}>
-            Score: {result.score}/{result.totalQuestions}
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.container}>
+        <TouchableOpacity
+          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+          onPress={() => router.push('/(tabs)/tests')}
+        >
+          <Ionicons name="arrow-back" size={24} color={tintColor} />
+          <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
+            Return to Tests
           </ThemedText>
-          <ThemedText style={styles.submittedText}>
-            Submitted: {new Date(result.submittedAt).toLocaleDateString()}
-          </ThemedText>
-        </ThemedView>
+        </TouchableOpacity>
 
-        {result.answers.map((answer, index) => (
-          <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
-            <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
-            <ThemedText style={styles.questionText}>{answer.questionText}</ThemedText>
-            
-            <ThemedView style={styles.optionsContainer}>
-              {answer.options.map((option, optionIndex) => (
-                <ThemedView
-                  key={optionIndex}
-                  style={[
-                    styles.optionContainer,
-                    answer.selectedOptionIndex === optionIndex && { borderColor: answer.isCorrect ? '#4CAF50' : '#f44336' },
-                    answer.correctOptionIndex === optionIndex && { borderColor: '#4CAF50' }
-                  ]}
-                >
-                  <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
-                  {answer.selectedOptionIndex === optionIndex && (
-                    <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>
-                      {answer.isCorrect ? '✓' : '✗'}
-                    </ThemedText>
-                  )}
-                </ThemedView>
-              ))}
-            </ThemedView>
+        <ScrollView style={styles.scrollView}>
+          <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
+          <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
+            <ThemedText style={styles.scoreText}>
+              Score: {result.score}/{result.totalQuestions}
+            </ThemedText>
+            <ThemedText style={styles.submittedText}>
+              Submitted: {new Date(result.submittedAt).toLocaleDateString()}
+            </ThemedText>
           </ThemedView>
-        ))}
-      </ScrollView>
-    </ThemedView>
+
+          {result.answers.map((answer, index) => (
+            <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
+              <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
+              <ThemedText style={styles.questionText}>{answer.questionText}</ThemedText>
+              
+              <ThemedView style={styles.optionsContainer}>
+                {answer.options.map((option, optionIndex) => (
+                  <ThemedView
+                    key={optionIndex}
+                    style={[
+                      styles.optionContainer,
+                      answer.selectedOptionIndex === optionIndex && { borderColor: answer.isCorrect ? '#4CAF50' : '#f44336' },
+                      answer.correctOptionIndex === optionIndex && { borderColor: '#4CAF50' }
+                    ]}
+                  >
+                    <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                    {answer.selectedOptionIndex === optionIndex && (
+                      <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>
+                        {answer.isCorrect ? '✓' : '✗'}
+                      </ThemedText>
+                    )}
+                  </ThemedView>
+                ))}
+              </ThemedView>
+            </ThemedView>
+          ))}
+        </ScrollView>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  returnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  returnButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
   },
   loadingContainer: {
     flex: 1,

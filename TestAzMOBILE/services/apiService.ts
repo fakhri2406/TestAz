@@ -116,7 +116,9 @@ class ApiService {
           ? testData.questions.map(q => ({
               id: q.id || '',
               text: q.text || '',
-              options: Array.isArray(q.options) ? q.options.map(o => String(o)) : [],
+              options: Array.isArray(q.options) 
+                ? q.options.map(o => typeof o === 'object' ? o.text : String(o))
+                : [],
               correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
             }))
           : []

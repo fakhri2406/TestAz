@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -110,49 +111,64 @@ export default function TakeTestScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <ThemedText style={styles.title}>{test.title}</ThemedText>
-        <ThemedText style={styles.description}>{test.description}</ThemedText>
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.container}>
+        <TouchableOpacity
+          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+          onPress={() => router.push('/(tabs)/tests')}
+        >
+          <Ionicons name="arrow-back" size={24} color={tintColor} />
+          <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
+            Return to Tests
+          </ThemedText>
+        </TouchableOpacity>
 
-        {test.questions.map((question, questionIndex) => (
-          <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
-            <ThemedText style={styles.questionNumber}>Question {questionIndex + 1}</ThemedText>
-            <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+        <ScrollView style={styles.scrollView}>
+          <ThemedText style={styles.title}>{test.title}</ThemedText>
+          <ThemedText style={styles.description}>{test.description}</ThemedText>
 
-            {question.options.map((option, optionIndex) => (
-              <TouchableOpacity
-                key={optionIndex}
-                style={[
-                  styles.optionContainer,
-                  answers[questionIndex] === optionIndex && { borderColor: tintColor }
-                ]}
-                onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
-              >
-                <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
-                {answers[questionIndex] === optionIndex && (
-                  <Ionicons name="checkmark-circle" size={24} color={tintColor} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ThemedView>
-        ))}
-      </ScrollView>
+          {test.questions.map((question, questionIndex) => (
+            <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+              <ThemedText style={styles.questionNumber}>Question {questionIndex + 1}</ThemedText>
+              <ThemedText style={styles.questionText}>{question.text}</ThemedText>
 
-      <TouchableOpacity
-        style={[styles.submitButton, { backgroundColor: tintColor }]}
-        onPress={handleSubmit}
-        disabled={submitting}
-      >
-        <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
-          {submitting ? 'Submitting...' : 'Submit Test'}
-        </ThemedText>
-      </TouchableOpacity>
-    </ThemedView>
+              {question.options.map((option, optionIndex) => (
+                <TouchableOpacity
+                  key={optionIndex}
+                  style={[
+                    styles.optionContainer,
+                    answers[questionIndex] === optionIndex && { borderColor: tintColor }
+                  ]}
+                  onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
+                >
+                  <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                  {answers[questionIndex] === optionIndex && (
+                    <Ionicons name="checkmark-circle" size={24} color={tintColor} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={[styles.submitButton, { backgroundColor: tintColor }]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
+            {submitting ? 'Submitting...' : 'Submit Test'}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -160,6 +176,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  returnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  returnButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
   },
   scrollView: {
     flex: 1,
