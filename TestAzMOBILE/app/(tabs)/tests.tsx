@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -81,6 +81,37 @@ export default function TestsScreen() {
     router.push('/test/new');
   };
 
+  const handleDeleteTest = async (testId: string) => {
+    Alert.alert(
+      'Delete Test',
+      'Are you sure you want to delete this test?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await api.deleteTest(testId);
+              // Remove the deleted test from the local state
+              setTests(prevTests => prevTests.filter(test => test.id !== testId));
+              Alert.alert('Success', 'Test deleted successfully');
+            } catch (error) {
+              console.error('Error deleting test:', error);
+              Alert.alert('Error', 'Failed to delete test. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -118,9 +149,19 @@ export default function TestsScreen() {
               >
                 <ThemedView style={styles.testHeader}>
                   <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
-                  <ThemedText type="subtitle" style={styles.testScore}>
-                    {translations.score}: {item.score || 0}
-                  </ThemedText>
+                  <ThemedView style={styles.headerRight}>
+                    <ThemedText type="subtitle" style={styles.testScore}>
+                      {translations.score}: {item.score || 0}
+                    </ThemedText>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteTest(item.id)}
+                      >
+                        <Ionicons name="trash-outline" size={24} color="#ff3b30" />
+                      </TouchableOpacity>
+                    )}
+                  </ThemedView>
                 </ThemedView>
                 <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
               </TouchableOpacity>
@@ -233,5 +274,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
   },
 }); 

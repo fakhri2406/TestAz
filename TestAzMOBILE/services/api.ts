@@ -141,5 +141,14 @@ export const api = {
       console.error('Create test error:', error);
       throw error;
     }
+  },
+
+  deleteTest: async (id: string): Promise<void> => {
+    try {
+      await apiService.deleteTest(id);
+    } catch (error) {
+      console.error('Delete test error:', error);
+      throw error;
+    }
   }
 }; 

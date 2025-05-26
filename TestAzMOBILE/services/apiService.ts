@@ -125,6 +125,27 @@ class ApiService {
       throw error;
     }
   }
+
+  async deleteTest(id: string) {
+    try {
+      console.log('Deleting test:', id);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/test/${id}`;
+      const response = await axios.delete(url, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
 }
 
 export const apiService = new ApiService(); 
