@@ -61,6 +61,25 @@ interface Test {
   score?: number;
 }
 
+interface TestSolution {
+  testId: string;
+  answers: {
+    questionId: string;
+    selectedOptionIndex: number;
+  }[];
+}
+
+interface TestResult {
+  id: string;
+  testId: string;
+  testTitle: string;
+  userId: string;
+  userName: string;
+  score: number;
+  totalQuestions: number;
+  submittedAt: string;
+}
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
@@ -148,6 +167,35 @@ export const api = {
       await apiService.deleteTest(id);
     } catch (error) {
       console.error('Delete test error:', error);
+      throw error;
+    }
+  },
+
+  submitTestSolution: async (solution: TestSolution): Promise<void> => {
+    try {
+      await apiService.submitTestSolution(solution);
+    } catch (error) {
+      console.error('Submit test solution error:', error);
+      throw error;
+    }
+  },
+
+  getTestResults: async (userId: string): Promise<TestResult[]> => {
+    try {
+      const results = await apiService.getTestResults(userId);
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.error('Get test results error:', error);
+      throw error;
+    }
+  },
+
+  getTestResultDetail: async (id: string) => {
+    try {
+      const response = await apiService.getTestResultDetail(id);
+      return response;
+    } catch (error) {
+      console.error('Get test result detail error:', error);
       throw error;
     }
   }

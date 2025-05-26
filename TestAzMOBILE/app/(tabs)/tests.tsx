@@ -35,7 +35,16 @@ export default function TestsScreen() {
     try {
       setLoading(true);
       const testsData = await api.getTests();
-      setTests(testsData);
+      // Ensure we have properly formatted test objects
+      const formattedTests = Array.isArray(testsData) 
+        ? testsData.map(test => ({
+            id: test.id || '',
+            title: test.title || '',
+            description: test.description || '',
+            score: typeof test.score === 'number' ? test.score : 0
+          }))
+        : [];
+      setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
       setTests([]);
@@ -141,7 +150,7 @@ export default function TestsScreen() {
         <>
           <FlatList
             data={tests}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
@@ -176,25 +185,24 @@ export default function TestsScreen() {
               />
             }
           />
-          <ThemedView style={styles.buttonContainer}>
-            {isAdmin && (
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: tintColor }]}
-                onPress={handleAddTest}
-              >
-                <Ionicons name="add" size={24} color={backgroundColor} />
-                <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                  {translations.addNewTest}
-                </ThemedText>
-              </TouchableOpacity>
-            )}
+          
+          {isAdmin && (
             <TouchableOpacity
-              style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
-              onPress={onRefresh}
+              style={[styles.addButton, { backgroundColor: tintColor }]}
+              onPress={handleAddTest}
             >
-              <Ionicons name="refresh" size={24} color={tintColor} />
+              <Ionicons name="add" size={24} color={backgroundColor} />
+              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                {translations.addNewTest}
+              </ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          )}
+          <TouchableOpacity
+            style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
+            onPress={onRefresh}
+          >
+            <Ionicons name="refresh" size={24} color={tintColor} />
+          </TouchableOpacity>
         </>
       )}
     </ThemedView>

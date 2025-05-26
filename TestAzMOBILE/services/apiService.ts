@@ -95,7 +95,44 @@ class ApiService {
   }
 
   async getTest(id: string) {
-    return this.get(API_CONFIG.ENDPOINTS.TEST_BY_ID(parseInt(id)));
+    try {
+      console.log('Getting test:', id);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/test/${id}`;
+      const response = await axios.get(url, { headers });
+      
+      // Ensure the response data is properly formatted
+      const testData = response.data;
+      if (!testData) {
+        throw new Error('No test data received');
+      }
+
+      // Format the test data
+      return {
+        id: testData.id || '',
+        title: testData.title || '',
+        description: testData.description || '',
+        questions: Array.isArray(testData.questions) 
+          ? testData.questions.map(q => ({
+              id: q.id || '',
+              text: q.text || '',
+              options: Array.isArray(q.options) ? q.options.map(o => String(o)) : [],
+              correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
+            }))
+          : []
+      };
+    } catch (error) {
+      console.error('Error getting test:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
   }
 
   async getUserById(id: string) {
@@ -135,6 +172,102 @@ class ApiService {
       return response.data;
     } catch (error) {
       console.error('Error deleting test:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async submitTestSolution(solution: {
+    testId: string;
+    answers: {
+      questionId: string;
+      selectedOptionIndex: number;
+    }[];
+  }) {
+    try {
+      console.log('Submitting test solution:', solution);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/usersolution`;
+      const response = await this.post(url, solution, { headers });
+      return response;
+    } catch (error) {
+      console.error('Error submitting test solution:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async getTestResults(userId: string) {
+    try {
+      console.log('Getting test results for user:', userId);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/usersolution/user/${userId}`;
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error getting test results:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async getTestResultDetail(id: string) {
+    try {
+      console.log('Getting test result detail:', id);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/usersolution/${id}`;
+      const response = await axios.get(url, { headers });
+      
+      // Ensure the response data is properly formatted
+      const resultData = response.data;
+      if (!resultData) {
+        throw new Error('No result data received');
+      }
+
+      // Format the result data
+      return {
+        id: resultData.id || '',
+        testId: resultData.testId || '',
+        testTitle: resultData.testTitle || '',
+        userId: resultData.userId || '',
+        userName: resultData.userName || '',
+        score: typeof resultData.score === 'number' ? resultData.score : 0,
+        totalQuestions: typeof resultData.totalQuestions === 'number' ? resultData.totalQuestions : 0,
+        submittedAt: resultData.submittedAt || new Date().toISOString(),
+        answers: Array.isArray(resultData.answers) 
+          ? resultData.answers.map(a => ({
+              questionId: a.questionId || '',
+              questionText: a.questionText || '',
+              selectedOptionIndex: typeof a.selectedOptionIndex === 'number' ? a.selectedOptionIndex : -1,
+              correctOptionIndex: typeof a.correctOptionIndex === 'number' ? a.correctOptionIndex : -1,
+              options: Array.isArray(a.options) ? a.options.map(o => String(o)) : [],
+              isCorrect: Boolean(a.isCorrect)
+            }))
+          : []
+      };
+    } catch (error) {
+      console.error('Error getting test result detail:', error);
       if (axios.isAxiosError(error)) {
         console.error('Axios error details:', {
           status: error.response?.status,
