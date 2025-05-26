@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -18,6 +18,7 @@ interface Test {
 export default function TestsScreen() {
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
@@ -32,6 +33,7 @@ export default function TestsScreen() {
 
   const loadTests = async () => {
     try {
+      setLoading(true);
       const testsData = await api.getTests();
       setTests(testsData);
     } catch (error) {
@@ -39,7 +41,13 @@ export default function TestsScreen() {
       setTests([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadTests();
   };
 
   const checkAdminStatus = async () => {
@@ -118,18 +126,34 @@ export default function TestsScreen() {
               </TouchableOpacity>
             )}
             contentContainerStyle={styles.list}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[tintColor]}
+                tintColor={tintColor}
+              />
+            }
           />
-          {isAdmin && (
+          <ThemedView style={styles.buttonContainer}>
+            {isAdmin && (
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: tintColor }]}
+                onPress={handleAddTest}
+              >
+                <Ionicons name="add" size={24} color={backgroundColor} />
+                <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                  {translations.addNewTest}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: tintColor }]}
-              onPress={handleAddTest}
+              style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
+              onPress={onRefresh}
             >
-              <Ionicons name="add" size={24} color={backgroundColor} />
-              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                {translations.addNewTest}
-              </ThemedText>
+              <Ionicons name="refresh" size={24} color={tintColor} />
             </TouchableOpacity>
-          )}
+          </ThemedView>
         </>
       )}
     </ThemedView>
@@ -181,13 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addButton: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    padding: 12,
     borderRadius: 24,
     elevation: 4,
     shadowColor: '#000',
@@ -198,6 +216,22 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  reloadButton: {
+    padding: 12,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 }); 

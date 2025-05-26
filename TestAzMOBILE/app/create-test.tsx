@@ -23,6 +23,7 @@ export default function CreateTest() {
     // Test API connection on component mount
     useEffect(() => {
         testConnection();
+        fetchTests();
     }, []);
 
     const testConnection = async () => {
@@ -67,10 +68,11 @@ export default function CreateTest() {
             setLoading(true);
             setError(null);
             console.log('Creating test with data:', newTest);
-            const response = await apiService.post<Test>(API_CONFIG.ENDPOINTS.TESTS, newTest);
+            const response = await apiService.post<Test>(API_CONFIG.ENDPOINTS.CREATE_TEST, newTest);
             console.log('Create test response:', response);
-            if (response.data) {
-                setTests(prev => [...prev, response.data!]);
+            if (response) {
+                // Refresh the test list after creating a new test
+                await fetchTests();
                 setNewTest({ title: '', description: '' });
                 Alert.alert('Success', 'Test created successfully!');
             }
