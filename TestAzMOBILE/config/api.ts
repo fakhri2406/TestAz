@@ -22,10 +22,13 @@ export const API_CONFIG = {
         USERS: '/api/user',
         USER_LOGIN: '/api/auth/login',
         USER_REGISTER: '/api/auth/signup',
+        USER_BY_EMAIL: (email: string) => `/api/auth/user/${encodeURIComponent(email)}`,
+        USER_BY_ID: (id: string) => `/api/auth/user/id/${encodeURIComponent(id)}`,
         
         // Test endpoints
         TESTS: '/api/test',
         TEST_BY_ID: (id: number) => `/api/test/${id}`,
+        CREATE_TEST: '/api/test/create',
         
         // Video Course endpoints
         VIDEO_COURSES: '/api/videocourse',

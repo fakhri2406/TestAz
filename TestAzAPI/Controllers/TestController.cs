@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TestAzAPI.Models;
 using TestAzAPI.Repositories.Base;
@@ -29,14 +30,39 @@ public class TestController : ControllerBase
         return test == null ? NotFound() : Ok(test);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(Test test)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("create")]
+    public async Task<ActionResult<Test>> CreateTest([FromBody] CreateTestRequest request)
     {
-        await _testRepo.AddAsync(test);
-        await _testRepo.SaveChangesAsync();
-        return Ok(test);
+        try
+        {
+            var test = new Test
+            {
+                Title = request.Title,
+                Description = request.Description,
+                Questions = request.Questions.Select(q => new Question
+                {
+                    Text = q.Text,
+                    Options = q.Options.Select((opt, index) => new AnswerOption
+                    {
+                        Text = opt,
+                        IsCorrect = index == q.CorrectOptionIndex
+                    }).ToList(),
+                    CorrectOptionIndex = q.CorrectOptionIndex
+                }).ToList()
+            };
+
+            await _testRepo.AddAsync(test);
+            await _testRepo.SaveChangesAsync();
+            return CreatedAtAction(nameof(Get), new { id = test.Id }, test);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, Test test)
     {
@@ -46,6 +72,7 @@ public class TestController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -55,4 +82,18 @@ public class TestController : ControllerBase
         await _testRepo.SaveChangesAsync();
         return NoContent();
     }
+}
+
+public class CreateTestRequest
+{
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public List<CreateQuestionRequest> Questions { get; set; }
+}
+
+public class CreateQuestionRequest
+{
+    public string Text { get; set; }
+    public List<string> Options { get; set; }
+    public int CorrectOptionIndex { get; set; }
 }

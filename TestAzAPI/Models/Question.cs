@@ -10,9 +10,10 @@ public class Question
 
     public string Text { get; set; }
     public QuestionType Type { get; set; }
+    public int CorrectOptionIndex { get; set; }
 
     public ICollection<AnswerOption>? Options { get; set; }
     public string? CorrectAnswer { get; set; }
 
-    public ICollection<UserAnswer>? UserAnswers { get; set; } // Add this
+    public ICollection<UserAnswer>? UserAnswers { get; set; }
 }

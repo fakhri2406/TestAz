@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../services/api';
@@ -8,8 +8,16 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 
+interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  surname: string;
+  role: string;
+}
+
 export default function ProfileScreen() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const tintColor = useThemeColor({}, 'tint');
@@ -23,10 +31,14 @@ export default function ProfileScreen() {
 
   const loadUserData = async () => {
     try {
-      const response = await api.getCurrentUser();
-      setUser(response.data);
+      const currentUser = await api.getCurrentUser();
+      if (currentUser?.id) {
+        const userData = await api.getUserById(currentUser.id);
+        setUser(userData);
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
+      Alert.alert(translations.error, translations.errorLoadingUserData);
     } finally {
       setLoading(false);
     }
@@ -57,6 +69,14 @@ export default function ProfileScreen() {
     );
   };
 
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -69,10 +89,18 @@ export default function ProfileScreen() {
         <ThemedText type="subtitle" style={styles.email}>
           {user?.email}
         </ThemedText>
+        {user?.role && (
+          <ThemedText type="subtitle" style={styles.role}>
+            {user.role}
+          </ThemedText>
+        )}
       </ThemedView>
 
       <ThemedView style={styles.section}>
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]} onPress={() => {}}>
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: borderColor }]} 
+          onPress={() => router.push('/settings/parameters')}
+        >
           <Ionicons name="settings-outline" size={24} color={tintColor} />
           <ThemedText style={styles.menuText}>
             {translations.settings}
@@ -80,7 +108,10 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={24} color={borderColor} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]} onPress={() => {}}>
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomColor: borderColor }]} 
+          onPress={() => router.push('/settings/help')}
+        >
           <Ionicons name="help-circle-outline" size={24} color={tintColor} />
           <ThemedText style={styles.menuText}>
             {translations.helpAndSupport}
@@ -104,6 +135,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     alignItems: 'center',
     padding: 20,
@@ -113,13 +148,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   name: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
     opacity: 0.7,
+    marginBottom: 4,
+  },
+  role: {
+    fontSize: 14,
+    opacity: 0.7,
+    textTransform: 'capitalize',
   },
   section: {
     padding: 20,
