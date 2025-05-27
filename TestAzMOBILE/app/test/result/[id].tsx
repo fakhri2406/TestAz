@@ -45,6 +45,7 @@ export default function TestResultDetailScreen() {
     try {
       setLoading(true);
       const resultData = await api.getTestResultDetail(id as string);
+      console.log('Result data:', JSON.stringify(resultData, null, 2));
       setResult(resultData);
     } catch (error) {
       console.error('Error loading test result:', error);
@@ -90,7 +91,15 @@ export default function TestResultDetailScreen() {
 
           {result.answers.map((answer, index) => (
             <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
-              <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
+              <ThemedView style={styles.questionHeader}>
+                <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
+                <ThemedText style={[
+                  styles.correctnessStatus,
+                  { color: answer.isCorrect ? '#4CAF50' : '#f44336' }
+                ]}>
+                  {answer.isCorrect ? 'Correct' : 'Incorrect'}
+                </ThemedText>
+              </ThemedView>
               <ThemedText style={styles.questionText}>{answer.questionText}</ThemedText>
               
               <ThemedView style={styles.optionsContainer}>
@@ -103,7 +112,9 @@ export default function TestResultDetailScreen() {
                       answer.correctOptionIndex === optionIndex && { borderColor: '#4CAF50' }
                     ]}
                   >
-                    <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                    <ThemedText style={styles.optionText}>
+                      {optionIndex + 1}. {String(option)}
+                    </ThemedText>
                     {answer.selectedOptionIndex === optionIndex && (
                       <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>
                         {answer.isCorrect ? '✓' : '✗'}
@@ -112,6 +123,22 @@ export default function TestResultDetailScreen() {
                   </ThemedView>
                 ))}
               </ThemedView>
+              {!answer.isCorrect && (
+                <ThemedView style={styles.correctAnswerContainer}>
+                  <ThemedText style={styles.correctAnswerLabel}>Your Answer:</ThemedText>
+                  <ThemedText style={[styles.correctAnswerText, { color: '#f44336' }]}>
+                    {answer.selectedOptionIndex >= 0 && answer.options[answer.selectedOptionIndex] 
+                      ? `${answer.selectedOptionIndex + 1}. ${answer.options[answer.selectedOptionIndex]}`
+                      : 'No answer selected'}
+                  </ThemedText>
+                  <ThemedText style={[styles.correctAnswerLabel, { marginTop: 8 }]}>Correct Answer:</ThemedText>
+                  <ThemedText style={[styles.correctAnswerText, { color: '#4CAF50' }]}>
+                    {answer.correctOptionIndex >= 0 && answer.options[answer.correctOptionIndex]
+                      ? `${answer.correctOptionIndex + 1}. ${answer.options[answer.correctOptionIndex]}`
+                      : 'No correct answer found'}
+                  </ThemedText>
+                </ThemedView>
+              )}
             </ThemedView>
           ))}
         </ScrollView>
@@ -171,10 +198,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   questionNumber: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
   },
   questionText: {
     fontSize: 16,
@@ -191,14 +223,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
+    backgroundColor: '#fff',
   },
   optionText: {
     flex: 1,
     fontSize: 16,
+    color: '#000',
   },
   optionStatus: {
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  correctnessStatus: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  correctAnswerContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  correctAnswerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+  },
+  correctAnswerText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
   },
 }); 

@@ -275,27 +275,33 @@ class ApiService {
         throw new Error('No result data received');
       }
 
+      console.log('Raw result data:', JSON.stringify(resultData, null, 2));
+
       // Format the result data
-      return {
+      const formattedResult = {
         id: resultData.id || '',
         testId: resultData.testId || '',
-        testTitle: resultData.testTitle || '',
+        testTitle: resultData.test?.title || '',
         userId: resultData.userId || '',
-        userName: resultData.userName || '',
+        userName: resultData.user?.name || '',
         score: typeof resultData.score === 'number' ? resultData.score : 0,
-        totalQuestions: typeof resultData.totalQuestions === 'number' ? resultData.totalQuestions : 0,
+        totalQuestions: resultData.test?.questions?.length || 0,
         submittedAt: resultData.submittedAt || new Date().toISOString(),
-        answers: Array.isArray(resultData.answers) 
-          ? resultData.answers.map(a => ({
-              questionId: a.questionId || '',
-              questionText: a.questionText || '',
-              selectedOptionIndex: typeof a.selectedOptionIndex === 'number' ? a.selectedOptionIndex : -1,
-              correctOptionIndex: typeof a.correctOptionIndex === 'number' ? a.correctOptionIndex : -1,
-              options: Array.isArray(a.options) ? a.options.map(o => String(o)) : [],
-              isCorrect: Boolean(a.isCorrect)
-            }))
-          : []
+        answers: resultData.test?.questions?.map((question, index) => {
+          const userAnswer = resultData.answers?.find(a => a.questionId === question.id);
+          return {
+            questionId: question.id || '',
+            questionText: question.text || '',
+            selectedOptionIndex: userAnswer ? parseInt(userAnswer.answerText) : -1,
+            correctOptionIndex: question.correctOptionIndex || -1,
+            options: question.options?.map(o => o.text) || [],
+            isCorrect: userAnswer ? parseInt(userAnswer.answerText) === question.correctOptionIndex : false
+          };
+        }) || []
       };
+
+      console.log('Formatted result:', JSON.stringify(formattedResult, null, 2));
+      return formattedResult;
     } catch (error) {
       console.error('Error getting test result detail:', error);
       if (axios.isAxiosError(error)) {
