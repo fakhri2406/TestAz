@@ -264,7 +264,9 @@ class ApiService {
     try {
       console.log('Getting test result detail:', id);
       const headers = await this.getHeaders();
-      const url = `${this.baseUrl}/api/usersolution/${id}`;
+      // Ensure the ID is properly formatted as a GUID
+      const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
+      const url = `${this.baseUrl}/api/usersolution/${formattedId}`;
       const response = await axios.get(url, { headers });
       
       // Ensure the response data is properly formatted

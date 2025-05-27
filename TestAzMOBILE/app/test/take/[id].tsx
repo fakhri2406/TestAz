@@ -97,17 +97,14 @@ export default function TakeTestScreen() {
 
       const response = await api.submitTestSolution(solution);
       
-      // Show success message with score
+      // Show success message and redirect to result page
       Alert.alert(
         'Success', 
         `Test submitted successfully!\n\nScore: ${response.score.toFixed(1)}%\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
         [
           { 
-            text: 'OK', 
-            onPress: () => router.push({
-              pathname: '/test/result/[id]',
-              params: { id: response.id }
-            })
+            text: 'View Results', 
+            onPress: () => router.push(`/test/result/${response.id}`)
           }
         ]
       );

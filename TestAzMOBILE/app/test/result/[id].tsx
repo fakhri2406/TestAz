@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenshotPrevention } from '@/components/ScreenshotPrevention';
 
 interface TestResultDetail {
   id: string;
@@ -34,7 +35,7 @@ export default function TestResultDetailScreen() {
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
-  const cardBackgroundColor = useThemeColor({}, 'card');
+  const cardBackgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     loadResult();
@@ -64,6 +65,7 @@ export default function TestResultDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ScreenshotPrevention />
       <ThemedView style={styles.container}>
         <TouchableOpacity
           style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
@@ -79,7 +81,7 @@ export default function TestResultDetailScreen() {
           <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
           <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
             <ThemedText style={styles.scoreText}>
-              Score: {result.score}/{result.totalQuestions}
+              Score: {result.score.toFixed(1)}%
             </ThemedText>
             <ThemedText style={styles.submittedText}>
               Submitted: {new Date(result.submittedAt).toLocaleDateString()}

@@ -73,6 +73,7 @@ public class UserSolutionController : ControllerBase
             await _solutionRepo.SaveChangesAsync();
 
             return Ok(new { 
+                id = solution.Id,
                 message = "Solution submitted successfully",
                 score = solution.Score,
                 totalQuestions = test.Questions.Count,
@@ -90,6 +91,17 @@ public class UserSolutionController : ControllerBase
     {
         var solutions = await _solutionRepo.GetUserSolutionsWithAnswersAsync(userId);
         return Ok(solutions);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var solution = await _solutionRepo.GetUserSolutionWithDetailsAsync(id);
+        if (solution == null)
+        {
+            return NotFound("Solution not found");
+        }
+        return Ok(solution);
     }
 }
 
