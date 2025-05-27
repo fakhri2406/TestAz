@@ -31,7 +31,7 @@ export default function TakeTestScreen() {
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
-  const cardBackgroundColor = useThemeColor({}, 'card');
+  const cardBackgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     loadTest();
@@ -80,23 +80,43 @@ export default function TakeTestScreen() {
       return;
     }
 
+    if (!test?.id) {
+      Alert.alert('Error', 'Test data is incomplete. Please try again.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       const solution = {
-        testId: test?.id,
+        testId: test.id,
         answers: answers.map((answer, index) => ({
-          questionId: test?.questions[index].id,
+          questionId: test.questions[index].id,
           selectedOptionIndex: answer
         }))
       };
 
-      await api.submitTestSolution(solution);
-      Alert.alert('Success', 'Test submitted successfully!', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      const response = await api.submitTestSolution(solution);
+      
+      // Show success message with score
+      Alert.alert(
+        'Success', 
+        `Test submitted successfully!\n\nScore: ${response.score.toFixed(1)}%\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
+        [
+          { 
+            text: 'OK', 
+            onPress: () => router.push({
+              pathname: '/test/result/[id]',
+              params: { id: response.id }
+            })
+          }
+        ]
+      );
     } catch (error) {
       console.error('Error submitting test:', error);
-      Alert.alert('Error', 'Failed to submit test. Please try again.');
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to submit test. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }

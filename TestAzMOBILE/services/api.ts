@@ -69,6 +69,14 @@ interface TestSolution {
   }[];
 }
 
+interface TestSolutionResponse {
+  id: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  message: string;
+}
+
 interface TestResult {
   id: string;
   testId: string;
@@ -171,9 +179,10 @@ export const api = {
     }
   },
 
-  submitTestSolution: async (solution: TestSolution): Promise<void> => {
+  submitTestSolution: async (solution: TestSolution): Promise<TestSolutionResponse> => {
     try {
-      await apiService.submitTestSolution(solution);
+      const response = await apiService.submitTestSolution(solution);
+      return response;
     } catch (error) {
       console.error('Submit test solution error:', error);
       throw error;

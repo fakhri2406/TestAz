@@ -196,8 +196,28 @@ class ApiService {
     try {
       console.log('Submitting test solution:', solution);
       const headers = await this.getHeaders();
-      const url = `${this.baseUrl}/api/usersolution`;
-      const response = await this.post(url, solution, { headers });
+      console.log('Request headers:', headers);
+      
+      const url = API_CONFIG.ENDPOINTS.USER_SOLUTIONS;
+      console.log('Request URL:', url);
+      
+      const userData = await AsyncStorage.getItem('user');
+      console.log('User data from storage:', userData);
+      
+      if (!userData) {
+        throw new Error('User not authenticated');
+      }
+      const { id: userId } = JSON.parse(userData);
+      console.log('User ID:', userId);
+
+      const solutionWithUserId = {
+        ...solution,
+        userId
+      };
+      console.log('Solution with user ID:', solutionWithUserId);
+
+      const response = await this.post(url, solutionWithUserId, { headers });
+      console.log('Submit solution response:', response);
       return response;
     } catch (error) {
       console.error('Error submitting test solution:', error);
@@ -205,7 +225,13 @@ class ApiService {
         console.error('Axios error details:', {
           status: error.response?.status,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            data: error.config?.data
+          }
         });
         throw new Error(error.response?.data?.message || error.message);
       }
