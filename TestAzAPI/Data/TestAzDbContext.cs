@@ -19,6 +19,11 @@ public class TestAzDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Configure User entity
+        modelBuilder.Entity<User>()
+            .Property(u => u.IsPremium)
+            .HasDefaultValue(false);
+
         // UserSolution -> User (default cascade is fine)
         modelBuilder.Entity<UserSolution>()
             .HasOne(us => us.User)

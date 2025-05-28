@@ -155,6 +155,7 @@ export const api = {
   createTest: async (testData: {
     title: string;
     description: string;
+    isPremium: boolean;
     questions: {
       text: string;
       options: string[];

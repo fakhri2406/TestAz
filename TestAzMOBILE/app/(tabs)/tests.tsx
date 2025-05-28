@@ -12,7 +12,8 @@ interface Test {
   id: string;
   title: string;
   description: string;
-  score?: number;
+  score: number;
+  isPremium: boolean;
 }
 
 export default function TestsScreen() {
@@ -20,6 +21,7 @@ export default function TestsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -28,7 +30,7 @@ export default function TestsScreen() {
 
   useEffect(() => {
     loadTests();
-    checkAdminStatus();
+    checkUserStatus();
   }, []);
 
   const loadTests = async () => {
@@ -41,7 +43,8 @@ export default function TestsScreen() {
             id: test.id || '',
             title: test.title || '',
             description: test.description || '',
-            score: typeof test.score === 'number' ? test.score : 0
+            score: typeof test.score === 'number' ? test.score : 0,
+            isPremium: test.isPremium || false
           }))
         : [];
       setTests(formattedTests);
@@ -59,16 +62,18 @@ export default function TestsScreen() {
     loadTests();
   };
 
-  const checkAdminStatus = async () => {
+  const checkUserStatus = async () => {
     try {
       const currentUser = await api.getCurrentUser();
       if (currentUser?.id) {
         const userData = await api.getUserById(currentUser.id);
         setIsAdmin(userData.role === 'Admin');
+        setIsPremium(userData.isPremium || false);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('Error checking user status:', error);
       setIsAdmin(false);
+      setIsPremium(false);
     }
   };
 
@@ -79,6 +84,20 @@ export default function TestsScreen() {
         params: { id: test.id }
       });
     } else {
+      if (test.isPremium && !isPremium) {
+        Alert.alert(
+          'Premium Test',
+          'This is a premium test. Please upgrade your account to access premium tests.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Upgrade to Premium', 
+              onPress: () => router.push('/premium')
+            }
+          ]
+        );
+        return;
+      }
       router.push({
         pathname: '/test/take/[id]',
         params: { id: test.id }
@@ -153,11 +172,33 @@ export default function TestsScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
+                style={[
+                  styles.testItem, 
+                  { 
+                    backgroundColor: cardBackgroundColor,
+                    opacity: item.isPremium && !isPremium ? 0.7 : 1,
+                    borderWidth: item.isPremium ? 2 : 0,
+                    borderColor: tintColor
+                  }
+                ]}
                 onPress={() => handleTestPress(item)}
               >
                 <ThemedView style={styles.testHeader}>
-                  <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+                  <ThemedView style={styles.titleContainer}>
+                    <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+                    {item.isPremium && (
+                      <ThemedView style={[styles.premiumBadge, { backgroundColor: tintColor }]}>
+                        {!isPremium ? (
+                          <Ionicons name="lock-closed" size={16} color="#fff" />
+                        ) : (
+                          <Ionicons name="star" size={16} color="#fff" />
+                        )}
+                        <ThemedText style={styles.premiumText}>
+                          {!isPremium ? 'Locked' : 'Premium'}
+                        </ThemedText>
+                      </ThemedView>
+                    )}
+                  </ThemedView>
                   <ThemedView style={styles.headerRight}>
                     <ThemedText type="subtitle" style={styles.testScore}>
                       {translations.score}: {item.score || 0}
@@ -290,5 +331,24 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 4,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  premiumText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 }); 
