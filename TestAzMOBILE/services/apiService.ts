@@ -65,6 +65,7 @@ class ApiService {
   async createTest(testData: {
     title: string;
     description: string;
+    isPremium: boolean;
     questions: Array<{
       text: string;
       options: string[];

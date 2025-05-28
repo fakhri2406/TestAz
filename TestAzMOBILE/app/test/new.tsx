@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,8 +22,9 @@ export default function NewTestScreen() {
   const [questions, setQuestions] = useState<Question[]>([{
     text: '',
     options: ['', '', '', ''],
-    correctOptionIndex: 0
+    correctOptionIndex: -1
   }]);
+  const [isPremium, setIsPremium] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -81,6 +82,7 @@ export default function NewTestScreen() {
       const testData = {
         title,
         description,
+        isPremium,
         questions: questions.map(q => ({
           text: q.text,
           options: q.options,
@@ -127,6 +129,16 @@ export default function NewTestScreen() {
             multiline
             numberOfLines={4}
           />
+
+          <ThemedView style={[styles.premiumContainer, { backgroundColor: cardBackgroundColor }]}>
+            <ThemedText style={styles.premiumLabel}>Premium Test</ThemedText>
+            <Switch
+              value={isPremium}
+              onValueChange={setIsPremium}
+              trackColor={{ false: '#767577', true: tintColor }}
+              thumbColor={isPremium ? '#fff' : '#f4f3f4'}
+            />
+          </ThemedView>
 
           {questions.map((question, questionIndex) => (
             <ThemedView key={questionIndex} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
@@ -260,6 +272,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  premiumContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  premiumLabel: {
     fontSize: 16,
     fontWeight: '600',
   },
