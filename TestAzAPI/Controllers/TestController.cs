@@ -40,6 +40,7 @@ public class TestController : ControllerBase
             {
                 Title = request.Title,
                 Description = request.Description,
+                IsPremium = request.IsPremium,
                 Questions = request.Questions.Select(q => new Question
                 {
                     Text = q.Text,
@@ -88,6 +89,7 @@ public class CreateTestRequest
 {
     public string Title { get; set; }
     public string Description { get; set; }
+    public bool IsPremium { get; set; }
     public List<CreateQuestionRequest> Questions { get; set; }
 }
 

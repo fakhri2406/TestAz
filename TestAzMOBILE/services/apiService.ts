@@ -327,6 +327,26 @@ class ApiService {
       throw error;
     }
   }
+
+  async upgradeToPremium() {
+    try {
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/user/premium`;
+      const response = await axios.post(url, {}, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error upgrading to premium:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
 }
 
 export const apiService = new ApiService(); 
