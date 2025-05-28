@@ -25,6 +25,7 @@ interface TestResultDetail {
     correctOptionIndex: number;
     options: string[];
     isCorrect: boolean;
+    correctOption: string;
   }>;
 }
 
@@ -46,6 +47,14 @@ export default function TestResultDetailScreen() {
       setLoading(true);
       const resultData = await api.getTestResultDetail(id as string);
       console.log('Result data:', JSON.stringify(resultData, null, 2));
+      console.log('Answers:', resultData.answers.map(a => ({
+        questionText: a.questionText,
+        selectedIndex: a.selectedOptionIndex,
+        correctIndex: a.correctOptionIndex,
+        options: a.options,
+        isCorrect: a.isCorrect,
+        correctOption: a.correctOption
+      })));
       setResult(resultData);
     } catch (error) {
       console.error('Error loading test result:', error);
@@ -133,8 +142,8 @@ export default function TestResultDetailScreen() {
                   </ThemedText>
                   <ThemedText style={[styles.correctAnswerLabel, { marginTop: 8 }]}>Correct Answer:</ThemedText>
                   <ThemedText style={[styles.correctAnswerText, { color: '#4CAF50' }]}>
-                    {answer.correctOptionIndex >= 0 && answer.options[answer.correctOptionIndex]
-                      ? `${answer.correctOptionIndex + 1}. ${answer.options[answer.correctOptionIndex]}`
+                    {answer.correctOption
+                      ? `${answer.correctOptionIndex + 1}. ${answer.correctOption}`
                       : 'No correct answer found'}
                   </ThemedText>
                 </ThemedView>

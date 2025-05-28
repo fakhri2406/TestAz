@@ -264,18 +264,14 @@ class ApiService {
     try {
       console.log('Getting test result detail:', id);
       const headers = await this.getHeaders();
-      // Ensure the ID is properly formatted as a GUID
       const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
       const url = `${this.baseUrl}/api/usersolution/${formattedId}`;
       const response = await axios.get(url, { headers });
       
-      // Ensure the response data is properly formatted
       const resultData = response.data;
       if (!resultData) {
         throw new Error('No result data received');
       }
-
-      console.log('Raw result data:', JSON.stringify(resultData, null, 2));
 
       // Format the result data
       const formattedResult = {
@@ -289,13 +285,28 @@ class ApiService {
         submittedAt: resultData.submittedAt || new Date().toISOString(),
         answers: resultData.test?.questions?.map((question, index) => {
           const userAnswer = resultData.answers?.find(a => a.questionId === question.id);
+          const selectedIndex = userAnswer ? parseInt(userAnswer.answerText) : -1;
+          const correctIndex = typeof question.correctOptionIndex === 'number' ? question.correctOptionIndex : -1;
+          const options = question.options?.map(o => o.text) || [];
+          const correctOption = correctIndex >= 0 && options[correctIndex] ? options[correctIndex] : '';
+
+          console.log('Question data:', {
+            questionText: question.text,
+            selectedIndex,
+            correctIndex,
+            options,
+            correctOption,
+            rawQuestion: question
+          });
+
           return {
             questionId: question.id || '',
             questionText: question.text || '',
-            selectedOptionIndex: userAnswer ? parseInt(userAnswer.answerText) : -1,
-            correctOptionIndex: question.correctOptionIndex || -1,
-            options: question.options?.map(o => o.text) || [],
-            isCorrect: userAnswer ? parseInt(userAnswer.answerText) === question.correctOptionIndex : false
+            selectedOptionIndex: selectedIndex,
+            correctOptionIndex: correctIndex,
+            options: options,
+            correctOption: correctOption,
+            isCorrect: selectedIndex === correctIndex
           };
         }) || []
       };
