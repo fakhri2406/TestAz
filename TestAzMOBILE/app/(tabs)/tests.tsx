@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -35,7 +35,16 @@ export default function TestsScreen() {
     try {
       setLoading(true);
       const testsData = await api.getTests();
-      setTests(testsData);
+      // Ensure we have properly formatted test objects
+      const formattedTests = Array.isArray(testsData) 
+        ? testsData.map(test => ({
+            id: test.id || '',
+            title: test.title || '',
+            description: test.description || '',
+            score: typeof test.score === 'number' ? test.score : 0
+          }))
+        : [];
+      setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
       setTests([]);
@@ -81,6 +90,37 @@ export default function TestsScreen() {
     router.push('/test/new');
   };
 
+  const handleDeleteTest = async (testId: string) => {
+    Alert.alert(
+      'Delete Test',
+      'Are you sure you want to delete this test?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await api.deleteTest(testId);
+              // Remove the deleted test from the local state
+              setTests(prevTests => prevTests.filter(test => test.id !== testId));
+              Alert.alert('Success', 'Test deleted successfully');
+            } catch (error) {
+              console.error('Error deleting test:', error);
+              Alert.alert('Error', 'Failed to delete test. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -110,7 +150,7 @@ export default function TestsScreen() {
         <>
           <FlatList
             data={tests}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.testItem, { backgroundColor: cardBackgroundColor }]}
@@ -118,9 +158,19 @@ export default function TestsScreen() {
               >
                 <ThemedView style={styles.testHeader}>
                   <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
-                  <ThemedText type="subtitle" style={styles.testScore}>
-                    {translations.score}: {item.score || 0}
-                  </ThemedText>
+                  <ThemedView style={styles.headerRight}>
+                    <ThemedText type="subtitle" style={styles.testScore}>
+                      {translations.score}: {item.score || 0}
+                    </ThemedText>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteTest(item.id)}
+                      >
+                        <Ionicons name="trash-outline" size={24} color="#ff3b30" />
+                      </TouchableOpacity>
+                    )}
+                  </ThemedView>
                 </ThemedView>
                 <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
               </TouchableOpacity>
@@ -135,25 +185,24 @@ export default function TestsScreen() {
               />
             }
           />
-          <ThemedView style={styles.buttonContainer}>
-            {isAdmin && (
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: tintColor }]}
-                onPress={handleAddTest}
-              >
-                <Ionicons name="add" size={24} color={backgroundColor} />
-                <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                  {translations.addNewTest}
-                </ThemedText>
-              </TouchableOpacity>
-            )}
+          
+          {isAdmin && (
             <TouchableOpacity
-              style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
-              onPress={onRefresh}
+              style={[styles.addButton, { backgroundColor: tintColor }]}
+              onPress={handleAddTest}
             >
-              <Ionicons name="refresh" size={24} color={tintColor} />
+              <Ionicons name="add" size={24} color={backgroundColor} />
+              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                {translations.addNewTest}
+              </ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+          )}
+          <TouchableOpacity
+            style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
+            onPress={onRefresh}
+          >
+            <Ionicons name="refresh" size={24} color={tintColor} />
+          </TouchableOpacity>
         </>
       )}
     </ThemedView>
@@ -233,5 +282,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
   },
 }); 

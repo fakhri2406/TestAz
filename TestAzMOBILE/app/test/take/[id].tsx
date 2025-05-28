@@ -1,0 +1,259 @@
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { api } from '@/services/api';
+
+interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+}
+
+interface Test {
+  id: string;
+  title: string;
+  description: string;
+  questions: Question[];
+}
+
+export default function TakeTestScreen() {
+  const { id } = useLocalSearchParams();
+  const [test, setTest] = useState<Test | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardBackgroundColor = useThemeColor({}, 'background');
+
+  useEffect(() => {
+    loadTest();
+  }, [id]);
+
+  const loadTest = async () => {
+    try {
+      setLoading(true);
+      const testData = await api.getTest(id as string);
+      // Ensure we have a properly formatted test object
+      const formattedTest: Test = {
+        id: testData.id || '',
+        title: testData.title || '',
+        description: testData.description || '',
+        questions: Array.isArray(testData.questions) 
+          ? testData.questions.map(q => ({
+              id: q.id || '',
+              text: q.text || '',
+              options: Array.isArray(q.options) ? q.options : [],
+              correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
+            }))
+          : []
+      };
+      setTest(formattedTest);
+      // Initialize answers array with -1 (no answer selected)
+      setAnswers(new Array(formattedTest.questions.length).fill(-1));
+    } catch (error) {
+      console.error('Error loading test:', error);
+      Alert.alert('Error', 'Failed to load test. Please try again.');
+      router.back();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswerSelect = (questionIndex: number, optionIndex: number) => {
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = optionIndex;
+    setAnswers(newAnswers);
+  };
+
+  const handleSubmit = async () => {
+    // Check if all questions are answered
+    if (answers.some(answer => answer === -1)) {
+      Alert.alert('Warning', 'Please answer all questions before submitting.');
+      return;
+    }
+
+    if (!test?.id) {
+      Alert.alert('Error', 'Test data is incomplete. Please try again.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const solution = {
+        testId: test.id,
+        answers: answers.map((answer, index) => ({
+          questionId: test.questions[index].id,
+          selectedOptionIndex: answer
+        }))
+      };
+
+      const response = await api.submitTestSolution(solution);
+      
+      // Show success message and redirect to result page
+      Alert.alert(
+        'Success', 
+        `Test submitted successfully!\n\nScore: ${response.score.toFixed(1)}%\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
+        [
+          { 
+            text: 'View Results', 
+            onPress: () => router.push(`/test/result/${response.id}`)
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to submit test. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading || !test) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ThemedText>Loading test...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.container}>
+        <TouchableOpacity
+          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+          onPress={() => router.push('/(tabs)/tests')}
+        >
+          <Ionicons name="arrow-back" size={24} color={tintColor} />
+          <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
+            Return to Tests
+          </ThemedText>
+        </TouchableOpacity>
+
+        <ScrollView style={styles.scrollView}>
+          <ThemedText style={styles.title}>{test.title}</ThemedText>
+          <ThemedText style={styles.description}>{test.description}</ThemedText>
+
+          {test.questions.map((question, questionIndex) => (
+            <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+              <ThemedText style={styles.questionNumber}>Question {questionIndex + 1}</ThemedText>
+              <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+
+              {question.options.map((option, optionIndex) => (
+                <TouchableOpacity
+                  key={optionIndex}
+                  style={[
+                    styles.optionContainer,
+                    answers[questionIndex] === optionIndex && { borderColor: tintColor }
+                  ]}
+                  onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
+                >
+                  <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                  {answers[questionIndex] === optionIndex && (
+                    <Ionicons name="checkmark-circle" size={24} color={tintColor} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={[styles.submitButton, { backgroundColor: tintColor }]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
+            {submitting ? 'Submitting...' : 'Submit Test'}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  returnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  returnButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  questionCard: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  questionNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  questionText: {
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  optionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  optionText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  submitButton: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+}); 

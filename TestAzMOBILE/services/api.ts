@@ -61,6 +61,33 @@ interface Test {
   score?: number;
 }
 
+interface TestSolution {
+  testId: string;
+  answers: {
+    questionId: string;
+    selectedOptionIndex: number;
+  }[];
+}
+
+interface TestSolutionResponse {
+  id: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  message: string;
+}
+
+interface TestResult {
+  id: string;
+  testId: string;
+  testTitle: string;
+  userId: string;
+  userName: string;
+  score: number;
+  totalQuestions: number;
+  submittedAt: string;
+}
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
@@ -139,6 +166,45 @@ export const api = {
       return response;
     } catch (error) {
       console.error('Create test error:', error);
+      throw error;
+    }
+  },
+
+  deleteTest: async (id: string): Promise<void> => {
+    try {
+      await apiService.deleteTest(id);
+    } catch (error) {
+      console.error('Delete test error:', error);
+      throw error;
+    }
+  },
+
+  submitTestSolution: async (solution: TestSolution): Promise<TestSolutionResponse> => {
+    try {
+      const response = await apiService.submitTestSolution(solution);
+      return response;
+    } catch (error) {
+      console.error('Submit test solution error:', error);
+      throw error;
+    }
+  },
+
+  getTestResults: async (userId: string): Promise<TestResult[]> => {
+    try {
+      const results = await apiService.getTestResults(userId);
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.error('Get test results error:', error);
+      throw error;
+    }
+  },
+
+  getTestResultDetail: async (id: string) => {
+    try {
+      const response = await apiService.getTestResultDetail(id);
+      return response;
+    } catch (error) {
+      console.error('Get test result detail error:', error);
       throw error;
     }
   }
