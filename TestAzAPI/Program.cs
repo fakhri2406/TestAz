@@ -7,6 +7,9 @@ using TestAzAPI.Repositories;
 using TestAzAPI.Repositories.Base;
 using TestAzAPI.Services;
 using System.Text.Json.Serialization;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not found in configuration");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -27,23 +31,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
 // Add CORS
+var allowedOrigins = builder.Configuration.GetSection("Security:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMobileApp",
         builder =>
         {
             builder
-                .SetIsOriginAllowed(origin => true) // Allow any origin in development
+                .WithOrigins(allowedOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .WithExposedHeaders("Content-Type", "Content-Length", "Content-Disposition");
+                .AllowCredentials()
+                .WithExposedHeaders("Content-Type", "Content-Length", "Content-Disposition", "Authorization");
         });
+});
+
+// Add rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.Identity?.Name ?? context.Request.Headers.Host.ToString(),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
 });
 
 // Configure JSON serialization
@@ -55,7 +74,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddDbContext<TestAzDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
@@ -65,11 +84,31 @@ builder.Services.AddScoped<JwtService>();
 
 var app = builder.Build();
 
+// Apply database migrations
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<TestAzDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TestAz API V1");
+        c.RoutePrefix = string.Empty; // Serve Swagger at root
+    });
 }
 
 // Important: Use CORS before other middleware
@@ -78,11 +117,17 @@ app.UseCors("AllowMobileApp");
 // Add security headers
 app.Use(async (context, next) =>
 {
-    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Add("X-Frame-Options", "DENY");
-    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     await next();
 });
+
+// Add rate limiting middleware
+app.UseRateLimiter();
 
 app.UseHttpsRedirection();
 

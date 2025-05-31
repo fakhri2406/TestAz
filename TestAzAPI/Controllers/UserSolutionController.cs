@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TestAzAPI.Models;
 using TestAzAPI.Repositories.Base;
+using System.ComponentModel.DataAnnotations;
 
 namespace TestAzAPI.Controllers;
 
@@ -11,79 +12,65 @@ public class UserSolutionController : ControllerBase
 {
     private readonly IUserSolutionRepository _solutionRepo;
     private readonly ITestRepository _testRepo;
+    private readonly IUserRepository _userRepo;
 
-    public UserSolutionController(IUserSolutionRepository solutionRepo, ITestRepository testRepo)
+    public UserSolutionController(IUserSolutionRepository solutionRepo, ITestRepository testRepo, IUserRepository userRepo)
     {
         _solutionRepo = solutionRepo;
         _testRepo = testRepo;
+        _userRepo = userRepo;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Submit(UserSolutionRequest request)
+    [HttpPost("submit")]
+    public async Task<IActionResult> SubmitSolution([FromBody] SubmitSolutionRequest request)
     {
-        try
-        {
-            // Get the test to verify answers
-            var test = await _testRepo.GetTestWithQuestionsAsync(request.TestId);
-            if (test == null)
-            {
-                return NotFound("Test not found");
-            }
+        var user = await _userRepo.GetByIdAsync(request.UserId);
+        if (user == null)
+            return NotFound("User not found");
 
-            // Create user solution
-            var solution = new UserSolution
+        var test = await _testRepo.GetByIdAsync(request.TestId);
+        if (test == null)
+            return NotFound("Test not found");
+
+        var solution = new UserSolution
+        {
+            User = user,
+            Test = test,
+            StartedAt = DateTime.UtcNow,
+            SubmittedAt = DateTime.UtcNow,
+            Answers = new List<UserAnswer>()
+        };
+
+        foreach (var answer in request.Answers)
+        {
+            var question = test.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
+            if (question == null)
+                continue;
+
+            var userAnswer = new UserAnswer
             {
-                Id = Guid.NewGuid(),
-                UserId = request.UserId,
-                TestId = request.TestId,
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<UserAnswer>()
+                UserSolution = solution,
+                Question = question,
+                AnswerText = answer.SelectedOptionIndex.ToString(),
+                IsCorrect = answer.SelectedOptionIndex == question.CorrectOptionIndex,
+                PointsEarned = answer.SelectedOptionIndex == question.CorrectOptionIndex ? question.Points : 0
             };
 
-            // Process each answer
-            int correctAnswers = 0;
-            foreach (var answer in request.Answers)
-            {
-                var question = test.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
-                if (question == null) continue;
-
-                var userAnswer = new UserAnswer
-                {
-                    Id = Guid.NewGuid(),
-                    UserSolutionId = solution.Id,
-                    QuestionId = answer.QuestionId,
-                    AnswerText = answer.SelectedOptionIndex.ToString()
-                };
-
-                solution.Answers.Add(userAnswer);
-
-                // Check if answer is correct
-                if (question.CorrectOptionIndex == answer.SelectedOptionIndex)
-                {
-                    correctAnswers++;
-                }
-            }
-
-            // Calculate score
-            solution.Score = test.Questions.Count > 0 
-                ? (double)correctAnswers / test.Questions.Count * 100 
-                : 0;
-
-            await _solutionRepo.AddAsync(solution);
-            await _solutionRepo.SaveChangesAsync();
-
-            return Ok(new { 
-                id = solution.Id,
-                message = "Solution submitted successfully",
-                score = solution.Score,
-                totalQuestions = test.Questions.Count,
-                correctAnswers = correctAnswers
-            });
+            solution.Answers.Add(userAnswer);
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+
+        solution.Score = (int)solution.Answers.Sum(a => a.PointsEarned ?? 0);
+        solution.CompletedAt = DateTime.UtcNow;
+
+        await _solutionRepo.AddAsync(solution);
+        await _solutionRepo.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "Solution submitted successfully",
+            score = solution.Score,
+            totalQuestions = test.Questions.Count,
+            correctAnswers = solution.Answers.Count(a => a.IsCorrect)
+        });
     }
 
     [HttpGet("user/{userId}")]
@@ -105,15 +92,22 @@ public class UserSolutionController : ControllerBase
     }
 }
 
-public class UserSolutionRequest
+public class SubmitSolutionRequest
 {
-    public Guid TestId { get; set; }
-    public Guid UserId { get; set; }
-    public List<UserAnswerRequest> Answers { get; set; }
+    [Required]
+    public required Guid TestId { get; set; }
+    
+    [Required]
+    public required Guid UserId { get; set; }
+    
+    [Required]
+    public required List<UserAnswerRequest> Answers { get; set; }
 }
 
 public class UserAnswerRequest
 {
-    public Guid QuestionId { get; set; }
+    [Required]
+    public required Guid QuestionId { get; set; }
+    
     public int SelectedOptionIndex { get; set; }
 }

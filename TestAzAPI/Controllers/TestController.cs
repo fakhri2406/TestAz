@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TestAzAPI.Models;
+using TestAzAPI.Models.Enums;
 using TestAzAPI.Repositories.Base;
+using System.ComponentModel.DataAnnotations;
 
 namespace TestAzAPI.Controllers;
 
@@ -41,17 +43,32 @@ public class TestController : ControllerBase
                 Title = request.Title,
                 Description = request.Description,
                 IsPremium = request.IsPremium,
-                Questions = request.Questions.Select(q => new Question
+                Questions = new List<Question>()
+            };
+
+            foreach (var q in request.Questions)
+            {
+                var question = new Question
                 {
                     Text = q.Text,
-                    Options = q.Options.Select((opt, index) => new AnswerOption
-                    {
-                        Text = opt,
-                        IsCorrect = index == q.CorrectOptionIndex
-                    }).ToList(),
+                    Test = test,
+                    Options = new List<AnswerOption>(),
+                    Type = QuestionType.MultipleChoice,
                     CorrectOptionIndex = q.CorrectOptionIndex
-                }).ToList()
-            };
+                };
+
+                for (int i = 0; i < q.Options.Count; i++)
+                {
+                    question.Options.Add(new AnswerOption
+                    {
+                        Text = q.Options[i],
+                        IsCorrect = i == q.CorrectOptionIndex,
+                        Question = question
+                    });
+                }
+
+                test.Questions.Add(question);
+            }
 
             await _testRepo.AddAsync(test);
             await _testRepo.SaveChangesAsync();
@@ -87,15 +104,25 @@ public class TestController : ControllerBase
 
 public class CreateTestRequest
 {
-    public string Title { get; set; }
-    public string Description { get; set; }
+    [Required]
+    public required string Title { get; set; }
+    
+    [Required]
+    public required string Description { get; set; }
+    
     public bool IsPremium { get; set; }
-    public List<CreateQuestionRequest> Questions { get; set; }
+    
+    [Required]
+    public required List<CreateQuestionRequest> Questions { get; set; }
 }
 
 public class CreateQuestionRequest
 {
-    public string Text { get; set; }
-    public List<string> Options { get; set; }
+    [Required]
+    public required string Text { get; set; }
+    
+    [Required]
+    public required List<string> Options { get; set; }
+    
     public int CorrectOptionIndex { get; set; }
 }

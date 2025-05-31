@@ -1,45 +1,85 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// Helper function to get the correct API URL based on the platform
-const getBaseUrl = () => {
-    if (Platform.OS === 'android') {
-        // For Android emulator, use 10.0.2.2 to access host machine's localhost
-        return 'http://10.0.2.2:5248';
-    } else if (Platform.OS === 'ios') {
-        // For iOS simulator, use localhost
-        return 'http://localhost:5248';
-    } else {
-        // For physical devices, use your computer's IP address
-        // You might need to change this to your actual IP address
-        return 'http://10.0.2.2:5248';
+// Environment configuration
+const ENV = {
+    dev: {
+        apiUrl: Platform.select({
+            android: 'http://10.0.2.2:5248',
+            ios: 'http://localhost:5248',
+            default: 'http://localhost:5248'
+        }),
+        timeout: 10000
+    },
+    prod: {
+        apiUrl: 'https://api.testaz.com', // Replace with your production API URL
+        timeout: 15000
     }
 };
 
-// Log the base URL for debugging
-console.log('API Base URL:', getBaseUrl());
+// Get the current environment
+const getEnvironment = () => {
+    const isDev = __DEV__;
+    return isDev ? ENV.dev : ENV.prod;
+};
 
+// Get the base URL for the current environment
+const getBaseUrl = () => {
+    const env = getEnvironment();
+    return env.apiUrl;
+};
+
+// API configuration
 export const API_CONFIG = {
     BASE_URL: getBaseUrl(),
+    TIMEOUT: getEnvironment().timeout,
+    HEADERS: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    },
     
     ENDPOINTS: {
+        // Auth endpoints
+        AUTH: {
+            LOGIN: '/api/auth/login',
+            REGISTER: '/api/auth/signup',
+            REFRESH_TOKEN: '/api/auth/refresh-token',
+            LOGOUT: '/api/auth/logout'
+        },
+        
         // User endpoints
-        USERS: '/api/user',
-        USER_LOGIN: '/api/auth/login',
-        USER_REGISTER: '/api/auth/signup',
-        USER_BY_EMAIL: (email: string) => `/api/auth/user/${encodeURIComponent(email)}`,
-        USER_BY_ID: (id: string) => `/api/auth/user/id/${encodeURIComponent(id)}`,
+        USERS: {
+            BASE: '/api/user',
+            BY_EMAIL: (email: string) => `/api/auth/user/${encodeURIComponent(email)}`,
+            BY_ID: (id: string) => `/api/auth/user/id/${encodeURIComponent(id)}`,
+            PROFILE: '/api/user/profile',
+            UPDATE_PROFILE: '/api/user/profile/update'
+        },
         
         // Test endpoints
-        TESTS: '/api/test',
-        TEST_BY_ID: (id: string) => `/api/test/${id}`,
-        CREATE_TEST: '/api/test/create',
+        TESTS: {
+            BASE: '/api/test',
+            BY_ID: (id: string) => `/api/test/${id}`,
+            CREATE: '/api/test/create',
+            SUBMIT: (id: string) => `/api/test/${id}/submit`
+        },
         
         // Video Course endpoints
-        VIDEO_COURSES: '/api/videocourse',
-        VIDEO_COURSE_BY_ID: (id: string) => `/api/videocourse/${id}`,
+        VIDEO_COURSES: {
+            BASE: '/api/videocourse',
+            BY_ID: (id: string) => `/api/videocourse/${id}`,
+            PROGRESS: (id: string) => `/api/videocourse/${id}/progress`
+        },
         
         // User Solutions endpoints
-        USER_SOLUTIONS: '/api/usersolution',
-        USER_SOLUTION_BY_ID: (id: string) => `/api/usersolution/${id}`,
+        USER_SOLUTIONS: {
+            BASE: '/api/usersolution',
+            BY_ID: (id: string) => `/api/usersolution/${id}`,
+            BY_TEST: (testId: string) => `/api/usersolution/test/${testId}`
+        }
     }
-}; 
+};
+
+// Log the current environment and API URL for debugging
+console.log('Environment:', __DEV__ ? 'Development' : 'Production');
+console.log('API Base URL:', API_CONFIG.BASE_URL); 

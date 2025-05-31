@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TestAzAPI.Models;
 using TestAzAPI.Repositories.Base;
@@ -6,36 +7,63 @@ namespace TestAzAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VideocourseController : ControllerBase
+public class VideoCourseController : ControllerBase
 {
-    private readonly IVideoCourseRepository _vcRepo;
+    private readonly IVideoCourseRepository _videoCourseRepository;
 
-    public VideocourseController(IVideoCourseRepository vcRepo)
+    public VideoCourseController(IVideoCourseRepository videoCourseRepository)
     {
-        _vcRepo = vcRepo;
+        _videoCourseRepository = videoCourseRepository;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<VideoCourse>>> GetAll()
     {
-        return Ok(await _vcRepo.GetAllAsync());
+        var courses = await _videoCourseRepository.GetAllAsync();
+        return Ok(courses);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(Videocourse course)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<VideoCourse>> GetById(Guid id)
     {
-        await _vcRepo.AddAsync(course);
-        await _vcRepo.SaveChangesAsync();
+        var course = await _videoCourseRepository.GetByIdAsync(id);
+        if (course == null)
+            return NotFound();
+
         return Ok(course);
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    public async Task<ActionResult<VideoCourse>> Create(VideoCourse course)
+    {
+        await _videoCourseRepository.AddAsync(course);
+        await _videoCourseRepository.SaveAsync();
+        return CreatedAtAction(nameof(GetById), new { id = course.Id }, course);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, VideoCourse course)
+    {
+        if (id != course.Id)
+            return BadRequest();
+
+        _videoCourseRepository.Update(course);
+        await _videoCourseRepository.SaveAsync();
+        return NoContent();
+    }
+
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var vc = await _vcRepo.GetByIdAsync(id);
-        if (vc == null) return NotFound();
-        _vcRepo.Delete(vc);
-        await _vcRepo.SaveChangesAsync();
+        var course = await _videoCourseRepository.GetByIdAsync(id);
+        if (course == null)
+            return NotFound();
+
+        _videoCourseRepository.Delete(course);
+        await _videoCourseRepository.SaveAsync();
         return NoContent();
     }
 }

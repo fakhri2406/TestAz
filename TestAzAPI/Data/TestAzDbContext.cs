@@ -13,7 +13,7 @@ public class TestAzDbContext : DbContext
     public DbSet<AnswerOption> AnswerOptions { get; set; }
     public DbSet<UserSolution> UserSolutions { get; set; }
     public DbSet<UserAnswer> UserAnswers { get; set; }
-    public DbSet<Videocourse> Videocourses { get; set; }
+    public DbSet<VideoCourse> VideoCourses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +23,9 @@ public class TestAzDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.IsPremium)
             .HasDefaultValue(false);
+        modelBuilder.Entity<User>()
+            .Property(u => u.Id)
+            .ValueGeneratedOnAdd();
 
         // UserSolution -> User (default cascade is fine)
         modelBuilder.Entity<UserSolution>()
@@ -65,5 +68,24 @@ public class TestAzDbContext : DbContext
             .WithMany()
             .HasForeignKey(us => us.TestId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Test>()
+            .Property(t => t.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<Question>()
+            .Property(q => q.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<AnswerOption>()
+            .Property(a => a.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<UserSolution>()
+            .Property(us => us.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<UserAnswer>()
+            .Property(ua => ua.Id)
+            .ValueGeneratedOnAdd();
+        modelBuilder.Entity<VideoCourse>()
+            .Property(vc => vc.Id)
+            .ValueGeneratedOnAdd();
     }
 }

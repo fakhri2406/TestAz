@@ -34,7 +34,7 @@ class ApiService {
   async login(email: string, password: string) {
     try {
       console.log('Attempting login with:', { email });
-      const response = await this.post(API_CONFIG.ENDPOINTS.USER_LOGIN, { email, password });
+      const response = await this.post('/api/auth/login', { email, password });
       console.log('Login response:', response);
       
       if (response.token) {
@@ -59,7 +59,37 @@ class ApiService {
   }
 
   async signup(userData: { email: string; password: string; name: string; surname: string }) {
-    return this.post(API_CONFIG.ENDPOINTS.USER_REGISTER, userData);
+    try {
+      console.log('Attempting signup with data:', { ...userData, password: '[REDACTED]' });
+      console.log('Base URL:', this.baseUrl);
+      const endpoint = '/api/auth/signup';
+      console.log('Endpoint:', endpoint);
+      const url = `${this.baseUrl}${endpoint}`;
+      console.log('Full URL:', url);
+      
+      const headers = await this.getHeaders();
+      console.log('Request headers:', headers);
+      
+      const response = await axios.post(url, userData, { headers });
+      console.log('Signup response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Signup error details:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            data: error.config?.data
+          }
+        });
+      }
+      throw error;
+    }
   }
 
   async createTest(testData: {
@@ -72,13 +102,59 @@ class ApiService {
       correctOptionIndex: number;
     }>;
   }) {
-    return this.post(API_CONFIG.ENDPOINTS.CREATE_TEST, testData);
+    try {
+      console.log('Creating test with data:', testData);
+      const headers = await this.getHeaders();
+      console.log('Request headers:', headers);
+      
+      // Check if user is authenticated
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required. Please log in as an admin.');
+      }
+
+      // Check if user is admin
+      const userData = await AsyncStorage.getItem('user');
+      if (!userData) {
+        throw new Error('User data not found. Please log in again.');
+      }
+      const user = JSON.parse(userData);
+      if (user.role !== 'Admin') {
+        throw new Error('Admin privileges required to create tests.');
+      }
+
+      const response = await axios.post(`${this.baseUrl}/api/test/create`, testData, { 
+        headers: {
+          ...headers,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Create test response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating test:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            data: error.config?.data
+          }
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
   }
 
   async getTests() {
     try {
       console.log('Fetching tests...');
-      const response = await this.get(API_CONFIG.ENDPOINTS.TESTS);
+      const response = await this.get('/api/test');
       console.log('Tests response:', response);
       return response;
     } catch (error) {
@@ -98,32 +174,9 @@ class ApiService {
   async getTest(id: string) {
     try {
       console.log('Getting test:', id);
-      const headers = await this.getHeaders();
-      const url = `${this.baseUrl}/api/test/${id}`;
-      const response = await axios.get(url, { headers });
-      
-      // Ensure the response data is properly formatted
-      const testData = response.data;
-      if (!testData) {
-        throw new Error('No test data received');
-      }
-
-      // Format the test data
-      return {
-        id: testData.id || '',
-        title: testData.title || '',
-        description: testData.description || '',
-        questions: Array.isArray(testData.questions) 
-          ? testData.questions.map(q => ({
-              id: q.id || '',
-              text: q.text || '',
-              options: Array.isArray(q.options) 
-                ? q.options.map(o => typeof o === 'object' ? o.text : String(o))
-                : [],
-              correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
-            }))
-          : []
-      };
+      const response = await this.get(`/api/test/${id}`);
+      console.log('Test response:', response);
+      return response;
     } catch (error) {
       console.error('Error getting test:', error);
       if (axios.isAxiosError(error)) {
@@ -144,13 +197,8 @@ class ApiService {
       const formattedId = id.replace(/[{}]/g, '').toLowerCase();
       console.log('Formatted ID:', formattedId);
       
-      const url = API_CONFIG.ENDPOINTS.USER_BY_ID(formattedId);
-      console.log('Request URL:', url);
-      
-      const response = await this.get(url);
+      const response = await this.get(`/api/auth/user/id/${formattedId}`);
       console.log('User data response:', response);
-      
-      // The backend returns the user data directly, not wrapped in a data property
       return response;
     } catch (error) {
       console.error('Error in getUserById:', error);
@@ -199,9 +247,6 @@ class ApiService {
       const headers = await this.getHeaders();
       console.log('Request headers:', headers);
       
-      const url = API_CONFIG.ENDPOINTS.USER_SOLUTIONS;
-      console.log('Request URL:', url);
-      
       const userData = await AsyncStorage.getItem('user');
       console.log('User data from storage:', userData);
       
@@ -217,7 +262,7 @@ class ApiService {
       };
       console.log('Solution with user ID:', solutionWithUserId);
 
-      const response = await this.post(url, solutionWithUserId, { headers });
+      const response = await this.post('/api/usersolution/submit', solutionWithUserId);
       console.log('Submit solution response:', response);
       return response;
     } catch (error) {
@@ -243,10 +288,9 @@ class ApiService {
   async getTestResults(userId: string) {
     try {
       console.log('Getting test results for user:', userId);
-      const headers = await this.getHeaders();
-      const url = `${this.baseUrl}/api/usersolution/user/${userId}`;
-      const response = await axios.get(url, { headers });
-      return response.data;
+      const response = await this.get(`/api/usersolution/user/${userId}`);
+      console.log('Test results response:', response);
+      return response;
     } catch (error) {
       console.error('Error getting test results:', error);
       if (axios.isAxiosError(error)) {
@@ -264,56 +308,10 @@ class ApiService {
   async getTestResultDetail(id: string) {
     try {
       console.log('Getting test result detail:', id);
-      const headers = await this.getHeaders();
       const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
-      const url = `${this.baseUrl}/api/usersolution/${formattedId}`;
-      const response = await axios.get(url, { headers });
-      
-      const resultData = response.data;
-      if (!resultData) {
-        throw new Error('No result data received');
-      }
-
-      // Format the result data
-      const formattedResult = {
-        id: resultData.id || '',
-        testId: resultData.testId || '',
-        testTitle: resultData.test?.title || '',
-        userId: resultData.userId || '',
-        userName: resultData.user?.name || '',
-        score: typeof resultData.score === 'number' ? resultData.score : 0,
-        totalQuestions: resultData.test?.questions?.length || 0,
-        submittedAt: resultData.submittedAt || new Date().toISOString(),
-        answers: resultData.test?.questions?.map((question, index) => {
-          const userAnswer = resultData.answers?.find(a => a.questionId === question.id);
-          const selectedIndex = userAnswer ? parseInt(userAnswer.answerText) : -1;
-          const correctIndex = typeof question.correctOptionIndex === 'number' ? question.correctOptionIndex : -1;
-          const options = question.options?.map(o => o.text) || [];
-          const correctOption = correctIndex >= 0 && options[correctIndex] ? options[correctIndex] : '';
-
-          console.log('Question data:', {
-            questionText: question.text,
-            selectedIndex,
-            correctIndex,
-            options,
-            correctOption,
-            rawQuestion: question
-          });
-
-          return {
-            questionId: question.id || '',
-            questionText: question.text || '',
-            selectedOptionIndex: selectedIndex,
-            correctOptionIndex: correctIndex,
-            options: options,
-            correctOption: correctOption,
-            isCorrect: selectedIndex === correctIndex
-          };
-        }) || []
-      };
-
-      console.log('Formatted result:', JSON.stringify(formattedResult, null, 2));
-      return formattedResult;
+      const response = await this.get(`/api/usersolution/${formattedId}`);
+      console.log('Test result detail response:', response);
+      return response;
     } catch (error) {
       console.error('Error getting test result detail:', error);
       if (axios.isAxiosError(error)) {

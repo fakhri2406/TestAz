@@ -1,14 +1,25 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace TestAzAPI.Models;
 
 public class UserAnswer
 {
     public Guid Id { get; set; }
-
+    
     public Guid UserSolutionId { get; set; }
-    public UserSolution UserSolution { get; set; }
-
+    
+    [Required]
+    public required UserSolution UserSolution { get; set; }
+    
     public Guid QuestionId { get; set; }
-    public Question Question { get; set; }
-
-    public string AnswerText { get; set; }
+    
+    [Required]
+    public required Question Question { get; set; }
+    
+    [Required]
+    public required string AnswerText { get; set; }
+    
+    public bool IsCorrect { get; set; }
+    
+    public int? PointsEarned { get; set; }
 }

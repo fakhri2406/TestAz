@@ -316,6 +316,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   reloadButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
     padding: 12,
     borderRadius: 24,
     elevation: 4,
@@ -323,6 +326,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+    zIndex: 1000,
   },
   headerRight: {
     flexDirection: 'row',

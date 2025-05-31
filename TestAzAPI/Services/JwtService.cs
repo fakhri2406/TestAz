@@ -17,7 +17,8 @@ public class JwtService
 
     public string GenerateToken(User user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not found in configuration");
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -28,10 +29,10 @@ public class JwtService
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not found in configuration"),
+            audience: _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not found in configuration"),
             claims: claims,
-            expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"])),
+            expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"] ?? "60")),
             signingCredentials: credentials
         );
 

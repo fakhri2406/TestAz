@@ -15,9 +15,12 @@ namespace TestAzAPI.Migrations
                 name: "Tests",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsPremium = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    IsPremium = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -28,13 +31,14 @@ namespace TestAzAPI.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Surname = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PasswordHash = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
-                    PasswordSalt = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
-                    Role = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Surname = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<byte[]>(type: "bytea", nullable: false),
+                    PasswordSalt = table.Column<byte[]>(type: "bytea", nullable: false),
+                    IsPremium = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    Role = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -42,27 +46,34 @@ namespace TestAzAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Videocourses",
+                name: "VideoCourses",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Url = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    DurationInMinutes = table.Column<int>(type: "integer", nullable: true),
+                    ThumbnailUrl = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Videocourses", x => x.Id);
+                    table.PrimaryKey("PK_VideoCourses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Questions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    CorrectAnswer = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Text = table.Column<string>(type: "text", nullable: false),
+                    Points = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    CorrectOptionIndex = table.Column<int>(type: "integer", nullable: false),
+                    CorrectAnswer = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -79,11 +90,14 @@ namespace TestAzAPI.Migrations
                 name: "UserSolutions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Score = table.Column<double>(type: "float", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Score = table.Column<int>(type: "integer", nullable: true),
+                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    TestId1 = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -94,6 +108,11 @@ namespace TestAzAPI.Migrations
                         principalTable: "Tests",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserSolutions_Tests_TestId1",
+                        column: x => x.TestId1,
+                        principalTable: "Tests",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_UserSolutions_Users_UserId",
                         column: x => x.UserId,
@@ -106,10 +125,11 @@ namespace TestAzAPI.Migrations
                 name: "AnswerOptions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    QuestionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsCorrect = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    QuestionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Text = table.Column<string>(type: "text", nullable: false),
+                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    OrderIndex = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,10 +146,12 @@ namespace TestAzAPI.Migrations
                 name: "UserAnswers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserSolutionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    QuestionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AnswerText = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserSolutionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    QuestionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AnswerText = table.Column<string>(type: "text", nullable: false),
+                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    PointsEarned = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -174,6 +196,11 @@ namespace TestAzAPI.Migrations
                 column: "TestId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_UserSolutions_TestId1",
+                table: "UserSolutions",
+                column: "TestId1");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserSolutions_UserId",
                 table: "UserSolutions",
                 column: "UserId");
@@ -189,7 +216,7 @@ namespace TestAzAPI.Migrations
                 name: "UserAnswers");
 
             migrationBuilder.DropTable(
-                name: "Videocourses");
+                name: "VideoCourses");
 
             migrationBuilder.DropTable(
                 name: "Questions");

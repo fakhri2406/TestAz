@@ -2,6 +2,7 @@ namespace TestAzAPI.Data;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 public class TestAzDbContextFactory : IDesignTimeDbContextFactory<TestAzDbContext>
 {
@@ -16,7 +17,7 @@ public class TestAzDbContextFactory : IDesignTimeDbContextFactory<TestAzDbContex
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         var optionsBuilder = new DbContextOptionsBuilder<TestAzDbContext>();
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new TestAzDbContext(optionsBuilder.Options);
     }
