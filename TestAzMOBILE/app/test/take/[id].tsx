@@ -50,7 +50,14 @@ export default function TakeTestScreen() {
           ? testData.questions.map(q => ({
               id: q.id || '',
               text: q.text || '',
-              options: Array.isArray(q.options) ? q.options : [],
+              options: Array.isArray(q.options) 
+                ? q.options.map(opt => typeof opt === 'string' 
+                    ? opt 
+                    : typeof opt === 'object' && opt !== null
+                      ? opt.text || opt.Text || ''
+                      : String(opt)
+                  )
+                : [],
               correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
             }))
           : []
