@@ -84,4 +84,10 @@ export const translations = {
   // Settings
   parameters: 'Parametrlər',
   help: 'Kömək',
+
+  // Users
+  users: 'Users',
+  userManagement: 'User Management',
+  togglePremium: 'Toggle Premium',
+  toggleRole: 'Toggle Role',
 }; 

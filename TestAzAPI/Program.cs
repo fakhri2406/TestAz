@@ -7,9 +7,9 @@ using TestAzAPI.Repositories;
 using TestAzAPI.Repositories.Base;
 using TestAzAPI.Services;
 using System.Text.Json.Serialization;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 

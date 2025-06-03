@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../services/api';
+import { useAuth } from '@/context/AuthContext';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -21,6 +22,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -36,6 +38,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await api.signup({ name, surname, email, password });
+      await login(email, password);
       router.replace('/(tabs)');
     } catch (error) {
       Alert.alert(translations.error, error instanceof Error ? error.message : translations.signupFailed);

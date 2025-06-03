@@ -1,48 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../../services/api';
+import { useAuth } from '@/context/AuthContext';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 
-interface UserData {
-  id: string;
-  email: string;
-  name: string;
-  surname: string;
-  role: string;
-}
-
 export default function ProfileScreen() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const { user, logout } = useAuth();
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'icon');
-
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  const loadUserData = async () => {
-    try {
-      const currentUser = await api.getCurrentUser();
-      if (currentUser?.id) {
-        const userData = await api.getUserById(currentUser.id);
-        setUser(userData);
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      Alert.alert(translations.error, translations.errorLoadingUserData);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -58,7 +29,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.logout();
+              await logout();
               router.replace('/login');
             } catch (error) {
               console.error('Error logging out:', error);
@@ -68,14 +39,6 @@ export default function ProfileScreen() {
       ]
     );
   };
-
-  if (loading) {
-    return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={tintColor} />
-      </ThemedView>
-    );
-  }
 
   return (
     <ThemedView style={styles.container}>
@@ -134,10 +97,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     alignItems: 'center',

@@ -2,39 +2,23 @@ import { Tabs, Stack, useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View } from 'react-native';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 
-export default function Layout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading && initialRoute) {
-      router.replace(initialRoute);
-    }
-  }, [isLoading, initialRoute]);
-
-  const checkAuth = async () => {
-    try {
-      const user = await AsyncStorage.getItem('user');
-      if (!user) {
-        setInitialRoute('/(auth)/login');
+    if (!loading) {
+      if (!isAuthenticated) {
+        router.replace('/(auth)/login');
       }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [loading, isAuthenticated]);
 
-  if (isLoading) {
+  if (loading) {
     return <View style={{ flex: 1, backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }} />;
   }
 
@@ -44,5 +28,13 @@ export default function Layout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
+    </AuthProvider>
   );
 }

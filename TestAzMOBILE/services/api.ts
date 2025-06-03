@@ -88,6 +88,24 @@ interface TestResult {
   submittedAt: string;
 }
 
+interface VideoCourse {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  isPremium: boolean;
+  videoUrl: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  surname: string;
+  role: string;
+  isPremium: boolean;
+}
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
@@ -206,6 +224,81 @@ export const api = {
       return response;
     } catch (error) {
       console.error('Get test result detail error:', error);
+      throw error;
+    }
+  },
+
+  // Video Course functions
+  getVideoCourses: async (): Promise<VideoCourse[]> => {
+    try {
+      const response = await apiService.getVideoCourses();
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Get video courses error:', error);
+      throw error;
+    }
+  },
+
+  getVideoCourse: async (id: string): Promise<VideoCourse> => {
+    try {
+      const response = await apiService.getVideoCourse(id);
+      return response;
+    } catch (error) {
+      console.error('Get video course error:', error);
+      throw error;
+    }
+  },
+
+  createVideoCourse: async (videoData: {
+    title: string;
+    description: string;
+    duration: string;
+    isPremium: boolean;
+    videoUrl: string;
+  }): Promise<ApiResponse<any>> => {
+    try {
+      const response = await apiService.createVideoCourse(videoData);
+      return response;
+    } catch (error) {
+      console.error('Create video course error:', error);
+      throw error;
+    }
+  },
+
+  deleteVideoCourse: async (id: string): Promise<void> => {
+    try {
+      await apiService.deleteVideoCourse(id);
+    } catch (error) {
+      console.error('Delete video course error:', error);
+      throw error;
+    }
+  },
+
+  // User management functions
+  getAllUsers: async (): Promise<User[]> => {
+    try {
+      const response = await apiService.getAllUsers();
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Get all users error:', error);
+      throw error;
+    }
+  },
+
+  updateUserPremiumStatus: async (userId: string, isPremium: boolean): Promise<void> => {
+    try {
+      await apiService.updateUserPremiumStatus(userId, isPremium);
+    } catch (error) {
+      console.error('Update user premium status error:', error);
+      throw error;
+    }
+  },
+
+  updateUserRole: async (userId: string, role: string): Promise<void> => {
+    try {
+      await apiService.updateUserRole(userId, role);
+    } catch (error) {
+      console.error('Update user role error:', error);
       throw error;
     }
   }

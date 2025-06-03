@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -10,6 +11,8 @@ export default function TabLayout() {
   const backgroundColor = useThemeColor({}, 'background');
   const tabIconDefault = useThemeColor({}, 'tabIconDefault');
   const tabIconSelected = useThemeColor({}, 'tabIconSelected');
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
 
   return (
     <Tabs
@@ -43,6 +46,28 @@ export default function TabLayout() {
           ),
         }}
       />
+      {isAdmin && (
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: translations.users,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="people" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      {isAdmin && (
+        <Tabs.Screen
+          name="videos"
+          options={{
+            title: translations.videos,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="videocam" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tabs.Screen
         name="profile"
         options={{
