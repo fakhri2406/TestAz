@@ -89,28 +89,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {isAdmin && (
-        <>
-          <Tabs.Screen
-            name="users"
-            options={{
-              title: translations.users,
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="people" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="videos"
-            options={{
-              title: translations.videos,
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="videocam" size={size} color={color} />
-              ),
-            }}
-          />
-        </>
-      )}
       <Tabs.Screen
         name="profile"
         options={{
