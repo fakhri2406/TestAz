@@ -14,6 +14,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { API_URL } from '@/constants/Config';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

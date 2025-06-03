@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
@@ -24,8 +24,22 @@ export default function TabLayout() {
         },
         headerStyle: {
           backgroundColor: backgroundColor,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
         },
         headerTintColor: useThemeColor({}, 'text'),
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+        headerBackTitle: ' ',
+        headerBackVisible: true,
+        headerLeftContainerStyle: {
+          paddingLeft: Platform.OS === 'ios' ? 8 : 16,
+        },
+        headerRightContainerStyle: {
+          paddingRight: Platform.OS === 'ios' ? 8 : 16,
+        },
       }}
     >
       <Tabs.Screen

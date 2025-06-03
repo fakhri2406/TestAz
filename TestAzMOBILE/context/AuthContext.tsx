@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
+import { API_URL } from '../constants/Config';
 
 interface User {
   id: string;
@@ -92,16 +93,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Attempting login with email:', email);
+      console.log('API URL:', API_URL);
+      
       const response = await api.login({ email, password });
+      console.log('Login response:', response);
+      
       const { token: newToken, user: userData } = response;
       
       if (!newToken || !userData) {
+        console.error('Invalid login response:', response);
         throw new Error('Invalid login response');
       }
 
       // Verify token is valid
       const decodedUser = extractUserFromToken(newToken);
+      console.log('Decoded user from token:', decodedUser);
+      
       if (decodedUser.email !== email) {
+        console.error('Token validation failed:', { decodedEmail: decodedUser.email, providedEmail: email });
         throw new Error('Token validation failed');
       }
 
@@ -112,8 +122,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(newToken);
       setUser(userData);
       setIsAuthenticated(true);
+      console.log('Login successful');
     } catch (error) {
       console.error('Login error:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
       throw error;
     }
   };
