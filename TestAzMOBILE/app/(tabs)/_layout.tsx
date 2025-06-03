@@ -1,9 +1,19 @@
+import React, { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { useColorScheme, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 import { useAuth } from '@/context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  email: string;
+  role: string;
+  id: string;
+  exp: number;
+}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -12,7 +22,28 @@ export default function TabLayout() {
   const tabIconDefault = useThemeColor({}, 'tabIconDefault');
   const tabIconSelected = useThemeColor({}, 'tabIconSelected');
   const { user } = useAuth();
-  const isAdmin = user?.role === 'Admin';
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const decoded = jwtDecode<DecodedToken>(token);
+          console.log('Decoded token:', decoded);
+          setIsAdmin(decoded.role === 'Admin');
+        } else {
+          console.log('No token found');
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   return (
     <Tabs
@@ -32,8 +63,6 @@ export default function TabLayout() {
         headerTitleStyle: {
           fontWeight: '600',
         },
-        headerBackTitle: ' ',
-        headerBackVisible: true,
         headerLeftContainerStyle: {
           paddingLeft: Platform.OS === 'ios' ? 8 : 16,
         },
@@ -61,26 +90,26 @@ export default function TabLayout() {
         }}
       />
       {isAdmin && (
-        <Tabs.Screen
-          name="users"
-          options={{
-            title: translations.users,
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="people" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-      {isAdmin && (
-        <Tabs.Screen
-          name="videos"
-          options={{
-            title: translations.videos,
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="videocam" size={size} color={color} />
-            ),
-          }}
-        />
+        <>
+          <Tabs.Screen
+            name="users"
+            options={{
+              title: translations.users,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="people" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="videos"
+            options={{
+              title: translations.videos,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="videocam" size={size} color={color} />
+              ),
+            }}
+          />
+        </>
       )}
       <Tabs.Screen
         name="profile"

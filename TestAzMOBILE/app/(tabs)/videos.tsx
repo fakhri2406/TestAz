@@ -67,13 +67,20 @@ export default function VideosScreen() {
       const currentUser = await api.getCurrentUser();
       if (currentUser?.id) {
         const userData = await api.getUserById(currentUser.id);
-        setIsAdmin(userData.role === 'Admin');
+        const isUserAdmin = userData.role === 'Admin';
+        setIsAdmin(isUserAdmin);
         setIsPremium(userData.isPremium || false);
+        
+        // Redirect to home if not admin
+        if (!isUserAdmin) {
+          router.replace('/');
+        }
       }
     } catch (error) {
       console.error('Error checking user status:', error);
       setIsAdmin(false);
       setIsPremium(false);
+      router.replace('/');
     }
   };
 

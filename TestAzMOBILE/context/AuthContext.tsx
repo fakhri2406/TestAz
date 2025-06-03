@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('API URL:', API_URL);
       
       const response = await api.login({ email, password });
-      console.log('Login response:', response);
+      console.log('Login response:', JSON.stringify(response, null, 2));
       
       const { token: newToken, user: userData } = response;
       
@@ -108,7 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Verify token is valid
       const decodedUser = extractUserFromToken(newToken);
-      console.log('Decoded user from token:', decodedUser);
+      console.log('Decoded user from token:', JSON.stringify(decodedUser, null, 2));
+      console.log('User role from token:', decodedUser.role);
+      console.log('User role from response:', userData.role);
       
       if (decodedUser.email !== email) {
         console.error('Token validation failed:', { decodedEmail: decodedUser.email, providedEmail: email });
@@ -122,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(newToken);
       setUser(userData);
       setIsAuthenticated(true);
-      console.log('Login successful');
+      console.log('Login successful, user role:', userData.role);
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
