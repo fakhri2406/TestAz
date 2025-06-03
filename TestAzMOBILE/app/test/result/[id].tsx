@@ -47,7 +47,23 @@ export default function TestResultDetailScreen() {
       setLoading(true);
       const resultData = await api.getTestResultDetail(id as string);
       console.log('Result data:', JSON.stringify(resultData, null, 2));
-      console.log('Answers:', resultData.answers.map(a => ({
+
+      // Transform the data to ensure options are strings
+      const transformedData = {
+        ...resultData,
+        answers: resultData.answers.map(answer => ({
+          ...answer,
+          options: answer.options.map(option => 
+            typeof option === 'string' 
+              ? option 
+              : typeof option === 'object' && option !== null
+                ? option.text || option.Text || ''
+                : String(option)
+          )
+        }))
+      };
+
+      console.log('Transformed answers:', transformedData.answers.map(a => ({
         questionText: a.questionText,
         selectedIndex: a.selectedOptionIndex,
         correctIndex: a.correctOptionIndex,
@@ -55,7 +71,8 @@ export default function TestResultDetailScreen() {
         isCorrect: a.isCorrect,
         correctOption: a.correctOption
       })));
-      setResult(resultData);
+
+      setResult(transformedData);
     } catch (error) {
       console.error('Error loading test result:', error);
       Alert.alert('Error', 'Failed to load test result. Please try again.');
@@ -122,7 +139,7 @@ export default function TestResultDetailScreen() {
                     ]}
                   >
                     <ThemedText style={styles.optionText}>
-                      {optionIndex + 1}. {String(option)}
+                      {optionIndex + 1}. {option}
                     </ThemedText>
                     {answer.selectedOptionIndex === optionIndex && (
                       <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>

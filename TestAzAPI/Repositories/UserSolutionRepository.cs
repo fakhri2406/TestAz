@@ -21,6 +21,7 @@ public class UserSolutionRepository : Repository<UserSolution>, IUserSolutionRep
     public async Task<UserSolution?> GetUserSolutionWithDetailsAsync(Guid id)
     {
         return await _dbSet
+            .Include(s => s.User)
             .Include(s => s.Answers)
             .Include(s => s.Test)
                 .ThenInclude(t => t.Questions)

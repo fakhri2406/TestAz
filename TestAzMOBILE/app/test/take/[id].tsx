@@ -96,6 +96,16 @@ export default function TakeTestScreen() {
       };
 
       const response = await api.submitTestSolution(solution);
+      console.log('Submit solution response:', JSON.stringify(response, null, 2));
+      
+      // Format the ID to ensure it's a valid GUID
+      const formattedId = response.id?.toString() || '';
+      console.log('Response ID:', formattedId);
+      // Add dashes if they're missing (8-4-4-4-12 format)
+      const guidFormat = formattedId.length === 32 
+        ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
+        : formattedId;
+      console.log('Formatted GUID:', guidFormat);
       
       // Show success message and redirect to result page
       Alert.alert(
@@ -104,7 +114,7 @@ export default function TakeTestScreen() {
         [
           { 
             text: 'View Results', 
-            onPress: () => router.push(`/test/result/${response.id}`)
+            onPress: () => router.push(`/test/result/${guidFormat}`)
           }
         ]
       );

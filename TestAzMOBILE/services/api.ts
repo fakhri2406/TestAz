@@ -71,10 +71,10 @@ interface TestSolution {
 
 interface TestSolutionResponse {
   id: string;
+  message: string;
   score: number;
   correctAnswers: number;
   totalQuestions: number;
-  message: string;
 }
 
 interface TestResult {

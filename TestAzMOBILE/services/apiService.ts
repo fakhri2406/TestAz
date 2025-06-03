@@ -308,8 +308,15 @@ class ApiService {
   async getTestResultDetail(id: string) {
     try {
       console.log('Getting test result detail:', id);
+      // Format the ID to ensure it's a valid GUID
       const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
-      const response = await this.get(`/api/usersolution/${formattedId}`);
+      // Add dashes if they're missing (8-4-4-4-12 format)
+      const guidFormat = formattedId.length === 32 
+        ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
+        : formattedId;
+      console.log('Formatted GUID:', guidFormat);
+      
+      const response = await this.get(`/api/usersolution/${guidFormat}`);
       console.log('Test result detail response:', response);
       return response;
     } catch (error) {

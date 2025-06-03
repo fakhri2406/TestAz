@@ -66,6 +66,7 @@ public class UserSolutionController : ControllerBase
         await _solutionRepo.SaveChangesAsync();
 
         return Ok(new { 
+            id = solution.Id,
             message = "Solution submitted successfully",
             score = solution.Score,
             totalQuestions = test.Questions.Count,
@@ -88,7 +89,31 @@ public class UserSolutionController : ControllerBase
         {
             return NotFound("Solution not found");
         }
-        return Ok(solution);
+
+        // Transform the response to include string options
+        var transformedSolution = new
+        {
+            solution.Id,
+            solution.TestId,
+            TestTitle = solution.Test.Title,
+            solution.UserId,
+            UserName = $"{solution.User.Name} {solution.User.Surname}",
+            solution.Score,
+            TotalQuestions = solution.Test.Questions.Count,
+            solution.SubmittedAt,
+            Answers = solution.Answers.Select(a => new
+            {
+                QuestionId = a.QuestionId,
+                QuestionText = a.Question.Text,
+                SelectedOptionIndex = int.Parse(a.AnswerText),
+                CorrectOptionIndex = a.Question.CorrectOptionIndex,
+                Options = a.Question.Options.OrderBy(o => o.OrderIndex).Select(o => o.Text).ToList(),
+                IsCorrect = a.IsCorrect,
+                CorrectOption = a.Question.Options.FirstOrDefault(o => o.OrderIndex == a.Question.CorrectOptionIndex)?.Text
+            }).ToList()
+        };
+
+        return Ok(transformedSolution);
     }
 }
 
