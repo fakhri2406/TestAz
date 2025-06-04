@@ -76,11 +76,12 @@ builder.Services.AddControllers()
 builder.Services.AddDbContext<TestAzDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<TestAzAPI.Repositories.Base.IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
 builder.Services.AddScoped<IVideoCourseRepository, VideoCourseRepository>();
 builder.Services.AddScoped<IUserSolutionRepository, UserSolutionRepository>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

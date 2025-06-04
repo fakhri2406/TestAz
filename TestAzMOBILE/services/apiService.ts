@@ -92,6 +92,63 @@ class ApiService {
     }
   }
 
+  async resendVerification(data: { email: string }) {
+    try {
+      console.log('Attempting to resend verification code for:', data.email);
+      const endpoint = '/api/auth/resend-code';
+      const url = `${this.baseUrl}${endpoint}`;
+      console.log('Full URL:', url);
+      
+      const headers = await this.getHeaders();
+      console.log('Request headers:', headers);
+      console.log('Request data:', data);
+      
+      const response = await axios.post(url, { email: data.email }, { headers });
+      console.log('Resend verification response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Resend verification error details:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+            data: error.config?.data
+          }
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async verifyCode(data: { email: string; code: string }) {
+    try {
+      console.log('Attempting to verify code for:', data.email);
+      const endpoint = '/api/auth/verify-code';
+      const url = `${this.baseUrl}${endpoint}`;
+      
+      const headers = await this.getHeaders();
+      const response = await axios.post(url, data, { headers });
+      console.log('Verify code response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Verify code error details:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+  }
+
   async createTest(testData: {
     title: string;
     description: string;
@@ -208,7 +265,12 @@ class ApiService {
         console.error('Axios error details:', {
           status: error.response?.status,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
         });
         throw new Error(error.response?.data?.message || error.message);
       }

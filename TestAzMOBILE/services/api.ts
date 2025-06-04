@@ -1,6 +1,7 @@
 import { API_CONFIG } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from './apiService';
+import axios from 'axios';
 
 // API Response type
 interface ApiResponse<T> {
@@ -34,6 +35,11 @@ interface SignupRequest {
   surname: string;
 }
 
+interface VerifyCodeRequest {
+  email: string;
+  code: string;
+}
+
 interface AuthResponse {
   message: string;
   token?: string;
@@ -52,6 +58,7 @@ interface UserData {
   name: string;
   surname: string;
   role: string;
+  isPremium: boolean;
 }
 
 interface Test {
@@ -299,6 +306,26 @@ export const api = {
       await apiService.updateUserRole(userId, role);
     } catch (error) {
       console.error('Update user role error:', error);
+      throw error;
+    }
+  },
+
+  resendVerification: async (data: { email: string }) => {
+    try {
+      const response = await apiService.resendVerification(data);
+      return response;
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      throw error;
+    }
+  },
+
+  verifyCode: async (data: VerifyCodeRequest) => {
+    try {
+      const response = await apiService.verifyCode(data);
+      return response;
+    } catch (error) {
+      console.error('Verify code error:', error);
       throw error;
     }
   }

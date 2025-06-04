@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../services/api';
@@ -38,10 +39,24 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await api.signup({ name, surname, email, password });
-      await login(email, password);
-      router.replace('/(tabs)');
+      router.push({
+        pathname: '/verify-code',
+        params: { email }
+      });
     } catch (error) {
       Alert.alert(translations.error, error instanceof Error ? error.message : translations.signupFailed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      await api.resendVerification(email);
+      Alert.alert(translations.success, translations.verificationEmailResent);
+    } catch (error) {
+      Alert.alert(translations.error, error instanceof Error ? error.message : translations.resendVerificationFailed);
     } finally {
       setLoading(false);
     }
@@ -191,5 +206,8 @@ const styles = StyleSheet.create({
   },
   loginTextBold: {
     fontWeight: '600',
+  },
+  verificationActions: {
+    gap: 16,
   },
 }); 
