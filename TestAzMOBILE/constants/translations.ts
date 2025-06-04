@@ -129,4 +129,13 @@ export const translations = {
   verificationEmailResent: 'Verification email has been resent. Please check your inbox.',
   resendVerificationFailed: 'Failed to resend verification email. Please try again.',
   emailNotVerified: 'Please verify your email before logging in.',
+  enterVerificationCode: 'Enter Verification Code',
+  verificationCodeSentTo: 'We sent a verification code to {email}',
+  verificationCode: 'Enter 4-digit code',
+  verifyCode: 'Verify Code',
+  resendCode: 'Resend Code',
+  emailVerified: 'Email verified successfully! You can now login.',
+  verificationFailed: 'Failed to verify code. Please try again.',
+
+  // ... existing code ...
 }; 
