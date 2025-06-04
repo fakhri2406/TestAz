@@ -37,17 +37,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Add CORS
 var allowedOrigins = builder.Configuration.GetSection("Security:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var isDevelopment = builder.Environment.IsDevelopment();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMobileApp",
         builder =>
         {
-            builder
-                .WithOrigins(allowedOrigins)
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()
-                .WithExposedHeaders("Content-Type", "Content-Length", "Content-Disposition", "Authorization");
+            if (isDevelopment)
+            {
+                builder
+                    .SetIsOriginAllowed(_ => true) // Allow any origin in development
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            }
+            else
+            {
+                builder
+                    .WithOrigins(allowedOrigins)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .WithExposedHeaders("Content-Type", "Content-Length", "Content-Disposition", "Authorization");
+            }
         });
 });
 
@@ -118,19 +130,27 @@ app.UseCors("AllowMobileApp");
 // Add security headers
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
-    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    // Remove strict security headers in development
+    if (!app.Environment.IsDevelopment())
+    {
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+        context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+        context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    }
     await next();
 });
 
 // Add rate limiting middleware
 app.UseRateLimiter();
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Add authentication middleware
 app.UseAuthentication();

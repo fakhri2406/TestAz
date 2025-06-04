@@ -6,15 +6,25 @@ import { translations } from '@/constants/translations';
 
 class ApiService {
   private baseUrl: string;
+  private axiosInstance: typeof axios;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
+    this.axiosInstance = axios.create({
+      baseURL: this.baseUrl,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      withCredentials: false // Disable credentials for CORS
+    });
   }
 
   private async getHeaders() {
     const token = await AsyncStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     };
   }
@@ -22,54 +32,61 @@ class ApiService {
   private async get<T>(endpoint: string) {
     const headers = await this.getHeaders();
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await axios.get<T>(url, { headers });
+    const response = await this.axiosInstance.get<T>(url, { headers });
     return response.data;
   }
 
   private async post<T>(endpoint: string, data: any) {
     const headers = await this.getHeaders();
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await axios.post<T>(url, data, { headers });
+    const response = await this.axiosInstance.post<T>(url, data, { headers });
     return response.data;
   }
 
-  async login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
+  async login(email: string, password: string) {
     try {
+      console.log('Attempting login with email:', email);
       const response = await this.post('/api/auth/login', { email, password });
+      console.log('Login response:', response);
       
-      if (response.token) {
-        await AsyncStorage.setItem('token', response.token);
-        if (response.user) {
-          await AsyncStorage.setItem('user', JSON.stringify(response.user));
-        }
-        return { success: true };
+      if (!response.token || !response.user) {
+        return { success: false, message: response.message || 'Login failed' };
       }
-      return { success: false, message: translations.loginFailed };
+
+      return response;
     } catch (error) {
+      console.error('Login error:', error);
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data;
 
-        // Handle login-related errors (400 and 401)
-        if (status === 401 || (status === 400 && data?.errors)) {
-          const errors = data?.errors || {};
-          if (errors.Email || errors.Password) {
-            return { success: false, message: 'E-poçt və ya şifrə yanlışdır' };
-          }
-          return { success: false, message: 'E-poçt və ya şifrə yanlışdır' };
+        if (status === 401) {
+          return { 
+            success: false, 
+            message: data?.message || 'Invalid credentials' 
+          };
         }
 
-        // Handle validation errors
         if (status === 400 && data?.errors) {
-          return { success: false, message: data.message || 'Validation error occurred' };
+          const errors = data.errors;
+          if (errors.Email || errors.Password) {
+            return { 
+              success: false, 
+              message: 'Invalid email or password format' 
+            };
+          }
         }
 
-        // Handle other API errors
-        return { success: false, message: data?.message || error.message };
+        return { 
+          success: false, 
+          message: data?.message || error.message || 'Login failed' 
+        };
       }
       
-      // Handle non-Axios errors
-      return { success: false, message: translations.loginFailed };
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Login failed' 
+      };
     }
   }
 
@@ -85,7 +102,7 @@ class ApiService {
       const headers = await this.getHeaders();
       console.log('Request headers:', headers);
       
-      const response = await axios.post(url, userData, { headers });
+      const response = await this.axiosInstance.post(url, userData, { headers });
       console.log('Signup response:', response.data);
       return response.data;
     } catch (error) {
@@ -118,7 +135,7 @@ class ApiService {
       console.log('Request headers:', headers);
       console.log('Request data:', data);
       
-      const response = await axios.post(url, { email: data.email }, { headers });
+      const response = await this.axiosInstance.post(url, { email: data.email }, { headers });
       console.log('Resend verification response:', response.data);
       return response.data;
     } catch (error) {

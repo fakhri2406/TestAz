@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
-import { API_URL } from '../constants/Config';
 import { translations } from '../constants/translations';
 
 interface User {
@@ -94,30 +93,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.login(email, password);
+      const response = await api.login({ email, password });
       
-      if (!response.success) {
-        // If login failed, just return the error message
-        return { success: false, message: response.message };
-      }
-
-      const { token: newToken, user: userData } = response;
-      
-      if (!newToken || !userData) {
-        return { success: false, message: translations.loginFailed };
+      if (!response.token || !response.user) {
+        return { success: false, message: response.message || translations.loginFailed };
       }
 
       // Store token and user data
-      await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
       
-      setToken(newToken);
-      setUser(userData);
+      setToken(response.token);
+      setUser(response.user);
       setIsAuthenticated(true);
       
       return { success: true };
     } catch (error) {
-      return { success: false, message: translations.loginFailed };
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : translations.loginFailed 
+      };
     }
   };
 
