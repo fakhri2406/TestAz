@@ -394,37 +394,20 @@ class ApiService {
       const response = await this.get(`/api/usersolution/${guidFormat}`);
       console.log('Raw test result detail response:', response);
 
-      // Format the result data
+      // Format the result data using the answer data directly from the response
       const formattedResult = {
         ...response,
-        answers: response.test?.questions?.map((question, index) => {
-          const userAnswer = response.answers?.find(a => a.questionId === question.id);
-          const selectedIndex = userAnswer ? parseInt(userAnswer.answerText) : -1;
-          const correctIndex = typeof question.correctOptionIndex === 'number' ? question.correctOptionIndex : -1;
-          const options = question.options?.map(o => typeof o === 'string' ? o : o.text || '') || [];
-          const correctOption = correctIndex >= 0 && options[correctIndex] ? options[correctIndex] : '';
-
-          console.log('Question data:', {
-            questionText: question.text,
-            selectedIndex,
-            correctIndex,
-            options,
-            correctOption,
-            rawQuestion: question
-          });
-
-          return {
-            questionId: question.id || '',
-            questionText: question.text || '',
-            selectedOptionIndex: selectedIndex,
-            correctOptionIndex: correctIndex,
-            options: options,
-            correctOption: correctOption,
-            isCorrect: selectedIndex === correctIndex,
-            pointsEarned: userAnswer?.pointsEarned || 0,
-            totalPoints: question.points || 1
-          };
-        }) || []
+        answers: response.answers?.map(answer => ({
+          questionId: answer.questionId,
+          questionText: answer.questionText,
+          selectedOptionIndex: answer.selectedOptionIndex,
+          correctOptionIndex: answer.options.findIndex(o => o === answer.correctOption),
+          options: answer.options,
+          correctOption: answer.correctOption,
+          isCorrect: answer.isCorrect,
+          pointsEarned: answer.pointsEarned || 0,
+          totalPoints: answer.totalPoints || 1
+        })) || []
       };
 
       console.log('Formatted test result:', formattedResult);

@@ -57,14 +57,14 @@ export default function TakeTestScreen() {
                 options: q.options
               });
 
-              // Find the correct option index by looking at IsCorrect flag
-              const orderedOptions = q.options.sort((a, b) => a.orderIndex - b.orderIndex);
-              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect);
+              // Sort options by orderIndex and keep the full object
+              const orderedOptions = [...q.options].sort((a, b) => a.orderIndex - b.orderIndex);
+              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect) >= 0 ? orderedOptions.findIndex(opt => opt.isCorrect) : -1;
 
               const formattedQuestion = {
                 id: q.id || '',
                 text: q.text || '',
-                options: orderedOptions.map(opt => opt.text || ''),
+                options: orderedOptions, // keep full option objects
                 correctOptionIndex: correctOptionIndex
               };
 
@@ -107,15 +107,29 @@ export default function TakeTestScreen() {
 
     try {
       setSubmitting(true);
+
+      // Calculate all statistics in frontend
+      const correctAnswers = answers.map((answer, index) => ({
+        questionId: test.questions[index].id,
+        isCorrect: answer === test.questions[index].correctOptionIndex
+      }));
+
+      const correctAnswersCount = correctAnswers.filter(a => a.isCorrect).length;
+      const totalQuestions = test.questions.length;
+      const score = totalQuestions > 0 ? Math.round((correctAnswersCount * 100.0) / totalQuestions) : 0;
+      const scoreString = `${correctAnswersCount}/${totalQuestions}`;
+
+      // Just send the final statistics to backend
       const solution = {
         testId: test.id,
-        answers: answers.map((answer, index) => ({
-          questionId: test.questions[index].id,
-          selectedOptionIndex: answer + 1 // Convert 0-based index back to 1-based
-        }))
+        score: score,
+        scoreString: scoreString,
+        totalQuestions: totalQuestions,
+        correctAnswers: correctAnswersCount,
+        answers: correctAnswers
       };
 
-      console.log('Submitting solution with converted indices:', JSON.stringify(solution, null, 2));
+      console.log('Submitting final statistics:', JSON.stringify(solution, null, 2));
       const response = await api.submitTestSolution(solution);
       console.log('Submit solution response:', JSON.stringify(response, null, 2));
       
@@ -131,7 +145,7 @@ export default function TakeTestScreen() {
       // Show success message and redirect to result page
       Alert.alert(
         'Success', 
-        `Test submitted successfully!\n\nScore: ${response.score}\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
+        `Test submitted successfully!\n\nScore: ${scoreString}\nCorrect Answers: ${correctAnswersCount}/${totalQuestions}`,
         [
           { 
             text: 'View Results', 
@@ -191,7 +205,7 @@ export default function TakeTestScreen() {
                   ]}
                   onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
                 >
-                  <ThemedText style={styles.optionText}>{option}</ThemedText>
+                  <ThemedText style={styles.optionText}>{option.text}</ThemedText>
                   {answers[questionIndex] === optionIndex && (
                     <Ionicons name="checkmark-circle" size={24} color={tintColor} />
                   )}
