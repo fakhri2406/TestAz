@@ -26,5 +26,11 @@ public class User
     
     public string Role { get; set; } = "User";
     
+    public bool IsEmailVerified { get; set; }
+    
+    public string? VerificationCode { get; set; }
+    
+    public DateTime? VerificationCodeExpiry { get; set; }
+    
     public ICollection<UserSolution> Solutions { get; set; } = new List<UserSolution>();
 }

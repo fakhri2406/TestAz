@@ -120,4 +120,13 @@ export const translations = {
   premiumTerms: 'Premium şərtləri',
   premiumPrivacy: 'Premium məxfilik',
   premiumSupport: 'Premium dəstək',
+
+  // Email verification
+  verificationEmailSent: 'Verification Email Sent',
+  verificationEmailSentDescription: 'Please check your email at {email} to verify your account. Click the verification link in the email to continue.',
+  resendVerificationEmail: 'Resend Verification Email',
+  backToLogin: 'Back to Login',
+  verificationEmailResent: 'Verification email has been resent. Please check your inbox.',
+  resendVerificationFailed: 'Failed to resend verification email. Please try again.',
+  emailNotVerified: 'Please verify your email before logging in.',
 }; 

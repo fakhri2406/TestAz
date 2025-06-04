@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../services/api';
@@ -22,6 +23,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const { login } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
@@ -38,14 +40,67 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await api.signup({ name, surname, email, password });
-      await login(email, password);
-      router.replace('/(tabs)');
+      setVerificationSent(true);
     } catch (error) {
       Alert.alert(translations.error, error instanceof Error ? error.message : translations.signupFailed);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      await api.resendVerification(email);
+      Alert.alert(translations.success, translations.verificationEmailResent);
+    } catch (error) {
+      Alert.alert(translations.error, error instanceof Error ? error.message : translations.resendVerificationFailed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (verificationSent) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[styles.container, { backgroundColor }]}
+      >
+        <ThemedView style={styles.formContainer}>
+          <ThemedText type="title" style={styles.title}>{translations.verificationEmailSent}</ThemedText>
+          <ThemedText type="subtitle" style={styles.subtitle}>
+            {translations.verificationEmailSentDescription.replace('{email}', email)}
+          </ThemedText>
+
+          <View style={styles.verificationActions}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: tintColor }]}
+              onPress={handleResendVerification}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={backgroundColor} />
+              ) : (
+                <ThemedText style={[styles.buttonText, { color: backgroundColor }]}>
+                  {translations.resendVerificationEmail}
+                </ThemedText>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.loginLink}
+              onPress={() => router.push('/login')}
+              disabled={loading}
+            >
+              <ThemedText style={styles.loginText}>
+                {translations.backToLogin}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ThemedView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -191,5 +246,8 @@ const styles = StyleSheet.create({
   },
   loginTextBold: {
     fontWeight: '600',
+  },
+  verificationActions: {
+    gap: 16,
   },
 }); 

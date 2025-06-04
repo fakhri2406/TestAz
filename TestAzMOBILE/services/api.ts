@@ -34,6 +34,10 @@ interface SignupRequest {
   surname: string;
 }
 
+interface ResendVerificationRequest {
+  email: string;
+}
+
 interface AuthResponse {
   message: string;
   token?: string;
@@ -52,6 +56,7 @@ interface UserData {
   name: string;
   surname: string;
   role: string;
+  isPremium: boolean;
 }
 
 interface Test {
@@ -299,6 +304,16 @@ export const api = {
       await apiService.updateUserRole(userId, role);
     } catch (error) {
       console.error('Update user role error:', error);
+      throw error;
+    }
+  },
+
+  resendVerification: async (email: string) => {
+    try {
+      const response = await apiService.resendVerification({ email });
+      return response;
+    } catch (error) {
+      console.error('Resend verification error:', error);
       throw error;
     }
   }
