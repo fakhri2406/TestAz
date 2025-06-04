@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
+import { translations } from '@/constants/translations';
 
 interface Question {
   id: string;
@@ -41,20 +42,51 @@ export default function TakeTestScreen() {
     try {
       setLoading(true);
       const testData = await api.getTest(id as string);
+      console.log('Raw test data:', JSON.stringify(testData, null, 2));
+
       // Ensure we have a properly formatted test object
       const formattedTest: Test = {
         id: testData.id || '',
         title: testData.title || '',
         description: testData.description || '',
         questions: Array.isArray(testData.questions) 
-          ? testData.questions.map(q => ({
-              id: q.id || '',
-              text: q.text || '',
-              options: Array.isArray(q.options) ? q.options : [],
-              correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0
-            }))
+          ? testData.questions.map(q => {
+              console.log('Processing question:', {
+                id: q.id,
+                text: q.text,
+                correctOptionIndex: q.correctOptionIndex,
+                options: q.options
+              });
+
+              // Convert 1-based CorrectOptionIndex to 0-based
+              const correctOptionIndex = typeof q.correctOptionIndex === 'number' 
+                ? Math.max(0, q.correctOptionIndex - 1) // Subtract 1 to convert to 0-based index
+                : 0;
+
+              const formattedQuestion = {
+                id: q.id || '',
+                text: q.text || '',
+                options: Array.isArray(q.options) 
+                  ? q.options.map(opt => {
+                      const optionText = typeof opt === 'string' 
+                        ? opt 
+                        : typeof opt === 'object' && opt !== null
+                          ? opt.text || opt.Text || ''
+                          : String(opt);
+                      console.log('Option text:', optionText);
+                      return optionText;
+                    })
+                  : [],
+                correctOptionIndex: correctOptionIndex
+              };
+
+              console.log('Formatted question:', formattedQuestion);
+              return formattedQuestion;
+            })
           : []
       };
+
+      console.log('Final formatted test:', JSON.stringify(formattedTest, null, 2));
       setTest(formattedTest);
       // Initialize answers array with -1 (no answer selected)
       setAnswers(new Array(formattedTest.questions.length).fill(-1));
@@ -91,28 +123,39 @@ export default function TakeTestScreen() {
         testId: test.id,
         answers: answers.map((answer, index) => ({
           questionId: test.questions[index].id,
-          selectedOptionIndex: answer
+          selectedOptionIndex: answer + 1 // Convert 0-based index back to 1-based
         }))
       };
 
+      console.log('Submitting solution with converted indices:', JSON.stringify(solution, null, 2));
       const response = await api.submitTestSolution(solution);
+      console.log('Submit solution response:', JSON.stringify(response, null, 2));
+      
+      // Format the ID to ensure it's a valid GUID
+      const formattedId = response.id?.toString() || '';
+      console.log('Response ID:', formattedId);
+      // Add dashes if they're missing (8-4-4-4-12 format)
+      const guidFormat = formattedId.length === 32 
+        ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
+        : formattedId;
+      console.log('Formatted GUID:', guidFormat);
       
       // Show success message and redirect to result page
       Alert.alert(
         'Success', 
-        `Test submitted successfully!\n\nScore: ${response.score.toFixed(1)}%\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
+        `Test submitted successfully!\n\nScore: ${response.score}\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
         [
           { 
             text: 'View Results', 
-            onPress: () => router.push(`/test/result/${response.id}`)
+            onPress: () => router.push(`/test/result/${guidFormat}`)
           }
         ]
       );
     } catch (error) {
       console.error('Error submitting test:', error);
       Alert.alert(
-        'Error', 
-        error instanceof Error ? error.message : 'Failed to submit test. Please try again.'
+        translations.error,
+        translations.failedToSubmit
       );
     } finally {
       setSubmitting(false);
@@ -122,7 +165,7 @@ export default function TakeTestScreen() {
   if (loading || !test) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ThemedText>Loading test...</ThemedText>
+        <ThemedText>{translations.loadingTest}</ThemedText>
       </ThemedView>
     );
   }
@@ -136,7 +179,7 @@ export default function TakeTestScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
           <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
-            Return to Tests
+            {translations.returnToTests}
           </ThemedText>
         </TouchableOpacity>
 
@@ -146,7 +189,9 @@ export default function TakeTestScreen() {
 
           {test.questions.map((question, questionIndex) => (
             <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
-              <ThemedText style={styles.questionNumber}>Question {questionIndex + 1}</ThemedText>
+              <ThemedText style={styles.questionNumber}>
+                {translations.question} {questionIndex + 1}
+              </ThemedText>
               <ThemedText style={styles.questionText}>{question.text}</ThemedText>
 
               {question.options.map((option, optionIndex) => (
@@ -158,7 +203,7 @@ export default function TakeTestScreen() {
                   ]}
                   onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
                 >
-                  <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                  <ThemedText style={styles.optionText}>{option}</ThemedText>
                   {answers[questionIndex] === optionIndex && (
                     <Ionicons name="checkmark-circle" size={24} color={tintColor} />
                   )}
@@ -174,7 +219,7 @@ export default function TakeTestScreen() {
           disabled={submitting}
         >
           <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
-            {submitting ? 'Submitting...' : 'Submit Test'}
+            {submitting ? translations.submitting : translations.submitTest}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

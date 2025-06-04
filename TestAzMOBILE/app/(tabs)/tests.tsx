@@ -22,6 +22,7 @@ export default function TestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [showPremiumOnly, setShowPremiumOnly] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -50,7 +51,10 @@ export default function TestsScreen() {
       setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
-      setTests([]);
+      Alert.alert(
+        translations.error,
+        translations.failedToLoadTests
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,21 +87,9 @@ export default function TestsScreen() {
         pathname: '/test/[id]',
         params: { id: test.id }
       });
+    } else if (test.isPremium && !isPremium) {
+      router.push('/premium');
     } else {
-      if (test.isPremium && !isPremium) {
-        Alert.alert(
-          'Premium Test',
-          'This is a premium test. Please upgrade your account to access premium tests.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Upgrade to Premium', 
-              onPress: () => router.push('/premium')
-            }
-          ]
-        );
-        return;
-      }
       router.push({
         pathname: '/test/take/[id]',
         params: { id: test.id }
@@ -140,10 +132,20 @@ export default function TestsScreen() {
     );
   };
 
+  const filteredTests = tests.filter(test => {
+    if (showPremiumOnly) {
+      return test.isPremium;
+    }
+    if (!isPremium) {
+      return !test.isPremium;
+    }
+    return true;
+  });
+
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={tintColor} />
+        <ThemedText>{translations.loading}</ThemedText>
       </ThemedView>
     );
   }
@@ -152,63 +154,55 @@ export default function TestsScreen() {
     <ThemedView style={styles.container}>
       {tests.length === 0 ? (
         <ThemedView style={styles.emptyContainer}>
-          <ThemedText style={styles.emptyText}>Mövcud test tapılmadı</ThemedText>
-          {isAdmin && (
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: tintColor }]}
-              onPress={handleAddTest}
-            >
-              <Ionicons name="add" size={24} color={backgroundColor} />
-              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                {translations.addNewTest}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+          <Ionicons name="document-text-outline" size={64} color={tintColor} />
+          <ThemedText style={styles.emptyText}>{translations.noTestsFound}</ThemedText>
         </ThemedView>
       ) : (
         <>
+          {isPremium && (
+            <ThemedView style={[styles.filterContainer, { backgroundColor: cardBackgroundColor }]}>
+              <TouchableOpacity
+                style={[styles.filterButton, showPremiumOnly && { backgroundColor: tintColor }]}
+                onPress={() => setShowPremiumOnly(!showPremiumOnly)}
+              >
+                <Ionicons 
+                  name="star" 
+                  size={20} 
+                  color={showPremiumOnly ? backgroundColor : tintColor} 
+                />
+                <ThemedText 
+                  style={[
+                    styles.filterButtonText, 
+                    { color: showPremiumOnly ? backgroundColor : tintColor }
+                  ]}
+                >
+                  {showPremiumOnly ? translations.showAllTests : translations.showPremiumTests}
+                </ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+
           <FlatList
             data={tests}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[
-                  styles.testItem, 
-                  { 
-                    backgroundColor: cardBackgroundColor,
-                    opacity: item.isPremium && !isPremium ? 0.7 : 1,
-                    borderWidth: item.isPremium ? 2 : 0,
-                    borderColor: tintColor
-                  }
-                ]}
+                style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
                 onPress={() => handleTestPress(item)}
               >
                 <ThemedView style={styles.testHeader}>
                   <ThemedView style={styles.titleContainer}>
-                    <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
+                    <ThemedText style={styles.testTitle}>{item.title}</ThemedText>
                     {item.isPremium && (
-                      <ThemedView style={[styles.premiumBadge, { backgroundColor: tintColor }]}>
-                        {!isPremium ? (
-                          <Ionicons name="lock-closed" size={16} color="#fff" />
-                        ) : (
-                          <Ionicons name="star" size={16} color="#fff" />
-                        )}
-                        <ThemedText style={styles.premiumText}>
-                          {!isPremium ? 'Locked' : 'Premium'}
-                        </ThemedText>
-                      </ThemedView>
-                    )}
-                  </ThemedView>
-                  <ThemedView style={styles.headerRight}>
-                    <ThemedText type="subtitle" style={styles.testScore}>
-                      {translations.score}: {item.score || 0}
-                    </ThemedText>
-                    {isAdmin && (
                       <TouchableOpacity
-                        style={styles.deleteButton}
-                        onPress={() => handleDeleteTest(item.id)}
+                        style={styles.lockButton}
+                        onPress={() => router.push('/premium')}
                       >
-                        <Ionicons name="trash-outline" size={24} color="#ff3b30" />
+                        <Ionicons 
+                          name="lock-closed" 
+                          size={20} 
+                          color={item.isPremium && !isPremium ? tintColor : textColor} 
+                        />
                       </TouchableOpacity>
                     )}
                   </ThemedView>
@@ -273,7 +267,7 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
   },
-  testItem: {
+  testCard: {
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -287,9 +281,6 @@ const styles = StyleSheet.create({
   testTitle: {
     fontSize: 18,
     fontWeight: '600',
-  },
-  testScore: {
-    fontSize: 16,
   },
   testDescription: {
     fontSize: 14,
@@ -339,20 +330,30 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     flex: 1,
   },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+  lockButton: {
+    padding: 8,
     marginLeft: 8,
   },
-  premiumText: {
-    color: '#fff',
-    fontSize: 12,
+  filterContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    alignSelf: 'flex-start',
+  },
+  filterButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 4,
   },
 }); 

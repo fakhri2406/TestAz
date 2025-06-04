@@ -98,8 +98,10 @@ class ApiService {
     isPremium: boolean;
     questions: Array<{
       text: string;
-      options: string[];
-      correctOptionIndex: number;
+      options: Array<{
+        text: string;
+        isCorrect: boolean;
+      }>;
     }>;
   }) {
     try {
@@ -309,9 +311,49 @@ class ApiService {
     try {
       console.log('Getting test result detail:', id);
       const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
-      const response = await this.get(`/api/usersolution/${formattedId}`);
-      console.log('Test result detail response:', response);
-      return response;
+      const guidFormat = formattedId.length === 32 
+        ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
+        : formattedId;
+      console.log('Formatted GUID:', guidFormat);
+      
+      const response = await this.get(`/api/usersolution/${guidFormat}`);
+      console.log('Raw test result detail response:', response);
+
+      // Format the result data
+      const formattedResult = {
+        ...response,
+        answers: response.test?.questions?.map((question, index) => {
+          const userAnswer = response.answers?.find(a => a.questionId === question.id);
+          const selectedIndex = userAnswer ? parseInt(userAnswer.answerText) : -1;
+          const correctIndex = typeof question.correctOptionIndex === 'number' ? question.correctOptionIndex : -1;
+          const options = question.options?.map(o => typeof o === 'string' ? o : o.text || '') || [];
+          const correctOption = correctIndex >= 0 && options[correctIndex] ? options[correctIndex] : '';
+
+          console.log('Question data:', {
+            questionText: question.text,
+            selectedIndex,
+            correctIndex,
+            options,
+            correctOption,
+            rawQuestion: question
+          });
+
+          return {
+            questionId: question.id || '',
+            questionText: question.text || '',
+            selectedOptionIndex: selectedIndex,
+            correctOptionIndex: correctIndex,
+            options: options,
+            correctOption: correctOption,
+            isCorrect: selectedIndex === correctIndex,
+            pointsEarned: userAnswer?.pointsEarned || 0,
+            totalPoints: question.points || 1
+          };
+        }) || []
+      };
+
+      console.log('Formatted test result:', formattedResult);
+      return formattedResult;
     } catch (error) {
       console.error('Error getting test result detail:', error);
       if (axios.isAxiosError(error)) {

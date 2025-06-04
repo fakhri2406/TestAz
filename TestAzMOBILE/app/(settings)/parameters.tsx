@@ -5,15 +5,27 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { router } from 'expo-router';
 
 export default function ParametersScreen() {
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'icon');
+  const cardBackgroundColor = useThemeColor({}, 'card');
 
   return (
     <ThemedView style={styles.container}>
+      <TouchableOpacity
+        style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color={tintColor} />
+        <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
+          {translations.backToProfile}
+        </ThemedText>
+      </TouchableOpacity>
+
       <ThemedView style={styles.section}>
         <ThemedText type="title" style={styles.sectionTitle}>
           {translations.settings}
@@ -80,6 +92,17 @@ export default function ParametersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  returnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  returnButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
   },
   section: {
     padding: 20,
