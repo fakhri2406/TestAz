@@ -22,6 +22,7 @@ export default function TestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [showPremiumOnly, setShowPremiumOnly] = useState(false);
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -86,21 +87,9 @@ export default function TestsScreen() {
         pathname: '/test/[id]',
         params: { id: test.id }
       });
+    } else if (test.isPremium && !isPremium) {
+      router.push('/premium');
     } else {
-      if (test.isPremium && !isPremium) {
-        Alert.alert(
-          'Premium Test',
-          'This is a premium test. Please upgrade your account to access premium tests.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Upgrade to Premium', 
-              onPress: () => router.push('/premium')
-            }
-          ]
-        );
-        return;
-      }
       router.push({
         pathname: '/test/take/[id]',
         params: { id: test.id }
@@ -143,6 +132,16 @@ export default function TestsScreen() {
     );
   };
 
+  const filteredTests = tests.filter(test => {
+    if (showPremiumOnly) {
+      return test.isPremium;
+    }
+    if (!isPremium) {
+      return !test.isPremium;
+    }
+    return true;
+  });
+
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -160,24 +159,53 @@ export default function TestsScreen() {
         </ThemedView>
       ) : (
         <>
+          {isPremium && (
+            <ThemedView style={[styles.filterContainer, { backgroundColor: cardBackgroundColor }]}>
+              <TouchableOpacity
+                style={[styles.filterButton, showPremiumOnly && { backgroundColor: tintColor }]}
+                onPress={() => setShowPremiumOnly(!showPremiumOnly)}
+              >
+                <Ionicons 
+                  name="star" 
+                  size={20} 
+                  color={showPremiumOnly ? backgroundColor : tintColor} 
+                />
+                <ThemedText 
+                  style={[
+                    styles.filterButtonText, 
+                    { color: showPremiumOnly ? backgroundColor : tintColor }
+                  ]}
+                >
+                  {showPremiumOnly ? translations.showAllTests : translations.showPremiumTests}
+                </ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          )}
+
           <FlatList
             data={tests}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
-                onPress={() => router.push(`/test/take/${item.id}`)}
+                onPress={() => handleTestPress(item)}
               >
                 <ThemedView style={styles.testHeader}>
-                  <ThemedText style={styles.testTitle}>{item.title}</ThemedText>
-                  {item.isPremium && (
-                    <ThemedView style={[styles.premiumBadge, { backgroundColor: tintColor }]}>
-                      <Ionicons name="star" size={16} color={backgroundColor} />
-                      <ThemedText style={[styles.premiumText, { color: backgroundColor }]}>
-                        {translations.premium}
-                      </ThemedText>
-                    </ThemedView>
-                  )}
+                  <ThemedView style={styles.titleContainer}>
+                    <ThemedText style={styles.testTitle}>{item.title}</ThemedText>
+                    {item.isPremium && (
+                      <TouchableOpacity
+                        style={styles.lockButton}
+                        onPress={() => router.push('/premium')}
+                      >
+                        <Ionicons 
+                          name="lock-closed" 
+                          size={20} 
+                          color={item.isPremium && !isPremium ? tintColor : textColor} 
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </ThemedView>
                 </ThemedView>
                 <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
               </TouchableOpacity>
@@ -302,20 +330,30 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     flex: 1,
   },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+  lockButton: {
+    padding: 8,
     marginLeft: 8,
   },
-  premiumText: {
-    color: '#fff',
-    fontSize: 12,
+  filterContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    alignSelf: 'flex-start',
+  },
+  filterButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 4,
   },
 }); 

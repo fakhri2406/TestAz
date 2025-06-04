@@ -103,4 +103,21 @@ export const translations = {
   signupFailed: 'Qeydiyyatdan keçmək mümkün olmadı',
   name: 'Ad',
   surname: 'Soyad',
+
+  // Premium
+  premiumTest: 'Premium Test',
+  upgradeToAccess: 'Premium hesaba yüksəldin',
+  showPremiumTests: 'Premium testləri göstər',
+  showAllTests: 'Bütün testləri göstər',
+  upgradeToPremium: 'Premium-a yüksəlt',
+  premiumFeatures: 'Premium xüsusiyyətlər',
+  premiumDescription: 'Premium hesab ilə bütün testlərə çıxış əldə edin',
+  premiumBenefits: 'Premium üstünlükləri',
+  premiumPrice: 'Premium qiyməti',
+  premiumDuration: 'Premium müddəti',
+  premiumPurchase: 'Premium satın al',
+  premiumRestore: 'Premium bərpa et',
+  premiumTerms: 'Premium şərtləri',
+  premiumPrivacy: 'Premium məxfilik',
+  premiumSupport: 'Premium dəstək',
 }; 
