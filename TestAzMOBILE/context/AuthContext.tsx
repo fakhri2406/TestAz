@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
-import { API_URL } from '../constants/Config';
+import { translations } from '../constants/translations';
 
 interface User {
   id: string;
@@ -93,47 +93,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login with email:', email);
-      console.log('API URL:', API_URL);
-      
       const response = await api.login({ email, password });
-      console.log('Login response:', JSON.stringify(response, null, 2));
       
-      const { token: newToken, user: userData } = response;
-      
-      if (!newToken || !userData) {
-        console.error('Invalid login response:', response);
-        throw new Error('Invalid login response');
-      }
-
-      // Verify token is valid
-      const decodedUser = extractUserFromToken(newToken);
-      console.log('Decoded user from token:', JSON.stringify(decodedUser, null, 2));
-      console.log('User role from token:', decodedUser.role);
-      console.log('User role from response:', userData.role);
-      
-      if (decodedUser.email !== email) {
-        console.error('Token validation failed:', { decodedEmail: decodedUser.email, providedEmail: email });
-        throw new Error('Token validation failed');
+      if (!response.token || !response.user) {
+        return { success: false, message: response.message || translations.loginFailed };
       }
 
       // Store token and user data
-      await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
       
-      setToken(newToken);
-      setUser(userData);
+      setToken(response.token);
+      setUser(response.user);
       setIsAuthenticated(true);
-      console.log('Login successful, user role:', userData.role);
+      
+      return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack
-        });
-      }
-      throw error;
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : translations.loginFailed 
+      };
     }
   };
 

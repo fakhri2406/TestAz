@@ -1,18 +1,30 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api';
+import { AuthError, ValidationError } from '../utils/errors';
+import { translations } from '@/constants/translations';
 
 class ApiService {
   private baseUrl: string;
+  private axiosInstance: typeof axios;
 
   constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
+    this.axiosInstance = axios.create({
+      baseURL: this.baseUrl,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      withCredentials: false // Disable credentials for CORS
+    });
   }
 
   private async getHeaders() {
     const token = await AsyncStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     };
   }
@@ -20,41 +32,42 @@ class ApiService {
   private async get<T>(endpoint: string) {
     const headers = await this.getHeaders();
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await axios.get<T>(url, { headers });
+    const response = await this.axiosInstance.get<T>(url, { headers });
     return response.data;
   }
 
   private async post<T>(endpoint: string, data: any) {
     const headers = await this.getHeaders();
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await axios.post<T>(url, data, { headers });
+    const response = await this.axiosInstance.post<T>(url, data, { headers });
     return response.data;
   }
 
   async login(email: string, password: string) {
     try {
-      console.log('Attempting login with:', { email });
       const response = await this.post('/api/auth/login', { email, password });
-      console.log('Login response:', response);
       
-      if (response.token) {
-        await AsyncStorage.setItem('token', response.token);
-        if (response.user) {
-          await AsyncStorage.setItem('user', JSON.stringify(response.user));
-        }
+      if (!response.token || !response.user) {
+        return { success: false, message: 'Login failed' };
       }
+
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      // Silently handle errors and return appropriate warning messages
       if (axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-        throw new Error(error.response?.data?.message || error.message);
+        const status = error.response?.status;
+
+        switch (status) {
+          case 401:
+            return { success: false, message: 'Invalid email or password' };
+          case 400:
+            return { success: false, message: 'Please check your email and password format' };
+          default:
+            return { success: false, message: 'Unable to connect to the server' };
+        }
       }
-      throw error;
+      
+      return { success: false, message: 'Unable to connect to the server' };
     }
   }
 
@@ -70,7 +83,7 @@ class ApiService {
       const headers = await this.getHeaders();
       console.log('Request headers:', headers);
       
-      const response = await axios.post(url, userData, { headers });
+      const response = await this.axiosInstance.post(url, userData, { headers });
       console.log('Signup response:', response.data);
       return response.data;
     } catch (error) {
@@ -103,7 +116,7 @@ class ApiService {
       console.log('Request headers:', headers);
       console.log('Request data:', data);
       
-      const response = await axios.post(url, { email: data.email }, { headers });
+      const response = await this.axiosInstance.post(url, { email: data.email }, { headers });
       console.log('Resend verification response:', response.data);
       return response.data;
     } catch (error) {

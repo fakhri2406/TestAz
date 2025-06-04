@@ -7,6 +7,8 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  ToastAndroid,
+  View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -14,12 +16,13 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
-import { API_URL } from '@/constants/Config';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
@@ -35,10 +38,35 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace('/(tabs)');
+      console.log('Attempting login with email:', email);
+      const result = await login(email, password);
+      console.log('Login result:', result);
+      
+      if (result.success) {
+        console.log('Login successful, navigating to tabs');
+        router.replace('/(tabs)');
+      } else {
+        console.log('Login failed:', result.message);
+        // Show notification for login failure
+        if (Platform.OS === 'android') {
+          ToastAndroid.show(result.message || translations.loginFailed, ToastAndroid.LONG);
+        } else {
+          Alert.alert(
+            translations.error,
+            result.message || translations.loginFailed,
+            [{ text: 'OK' }],
+            { cancelable: true }
+          );
+        }
+      }
     } catch (error) {
-      Alert.alert(translations.error, error instanceof Error ? error.message : translations.loginFailed);
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : translations.loginFailed;
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(errorMessage, ToastAndroid.LONG);
+      } else {
+        Alert.alert(translations.error, errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -68,19 +96,32 @@ export default function LoginScreen() {
             autoCapitalize="none"
             editable={!loading}
           />
-          <TextInput
-            style={[styles.input, { 
-              borderColor,
-              color: textColor,
-              backgroundColor: backgroundColor
-            }]}
-            placeholder={translations.password}
-            placeholderTextColor={borderColor}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={[styles.input, styles.passwordInput, { 
+                borderColor,
+                color: textColor,
+                backgroundColor: backgroundColor
+              }]}
+              placeholder={translations.password}
+              placeholderTextColor={borderColor}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              editable={!loading}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+              disabled={loading}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off' : 'eye'}
+                size={24}
+                color={borderColor}
+              />
+            </TouchableOpacity>
+          </View>
         </ThemedView>
 
         <TouchableOpacity
@@ -139,6 +180,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 50, // Make room for the eye icon
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 13,
+    padding: 4,
   },
   button: {
     height: 50,

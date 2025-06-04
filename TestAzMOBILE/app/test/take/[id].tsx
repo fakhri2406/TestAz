@@ -54,29 +54,17 @@ export default function TakeTestScreen() {
               console.log('Processing question:', {
                 id: q.id,
                 text: q.text,
-                correctOptionIndex: q.correctOptionIndex,
                 options: q.options
               });
 
-              // Convert 1-based CorrectOptionIndex to 0-based
-              const correctOptionIndex = typeof q.correctOptionIndex === 'number' 
-                ? Math.max(0, q.correctOptionIndex - 1) // Subtract 1 to convert to 0-based index
-                : 0;
+              // Find the correct option index by looking at IsCorrect flag
+              const orderedOptions = q.options.sort((a, b) => a.orderIndex - b.orderIndex);
+              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect);
 
               const formattedQuestion = {
                 id: q.id || '',
                 text: q.text || '',
-                options: Array.isArray(q.options) 
-                  ? q.options.map(opt => {
-                      const optionText = typeof opt === 'string' 
-                        ? opt 
-                        : typeof opt === 'object' && opt !== null
-                          ? opt.text || opt.Text || ''
-                          : String(opt);
-                      console.log('Option text:', optionText);
-                      return optionText;
-                    })
-                  : [],
+                options: orderedOptions.map(opt => opt.text || ''),
                 correctOptionIndex: correctOptionIndex
               };
 

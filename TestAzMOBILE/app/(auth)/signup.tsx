@@ -16,6 +16,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { validateEmail, validatePassword } from '@/utils/validation';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -23,16 +24,45 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | undefined>();
+  const [passwordError, setPasswordError] = useState<string | undefined>();
   const { login } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'icon');
+  const errorColor = '#ff3b30';
+
+  const validateForm = (): boolean => {
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(password);
+
+    setEmailError(emailValidation.message);
+    setPasswordError(passwordValidation.message);
+
+    if (!name || !surname) {
+      Alert.alert(translations.error, translations.fillAllFields);
+      return false;
+    }
+
+    return emailValidation.isValid && passwordValidation.isValid;
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    const validation = validateEmail(text);
+    setEmailError(validation.message);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    const validation = validatePassword(text);
+    setPasswordError(validation.message);
+  };
 
   const handleSignup = async () => {
-    if (!name || !surname || !email || !password) {
-      Alert.alert(translations.error, translations.fillAllFields);
+    if (!validateForm()) {
       return;
     }
 
@@ -98,33 +128,47 @@ export default function SignupScreen() {
             autoCapitalize="words"
             editable={!loading}
           />
-          <TextInput
-            style={[styles.input, { 
-              borderColor,
-              color: textColor,
-              backgroundColor: backgroundColor
-            }]}
-            placeholder={translations.email}
-            placeholderTextColor={borderColor}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-          <TextInput
-            style={[styles.input, { 
-              borderColor,
-              color: textColor,
-              backgroundColor: backgroundColor
-            }]}
-            placeholder={translations.password}
-            placeholderTextColor={borderColor}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+          <View>
+            <TextInput
+              style={[styles.input, { 
+                borderColor: emailError ? errorColor : borderColor,
+                color: textColor,
+                backgroundColor: backgroundColor
+              }]}
+              placeholder={translations.email}
+              placeholderTextColor={borderColor}
+              value={email}
+              onChangeText={handleEmailChange}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+            {emailError && (
+              <ThemedText style={[styles.errorText, { color: errorColor }]}>
+                {emailError}
+              </ThemedText>
+            )}
+          </View>
+          <View>
+            <TextInput
+              style={[styles.input, { 
+                borderColor: passwordError ? errorColor : borderColor,
+                color: textColor,
+                backgroundColor: backgroundColor
+              }]}
+              placeholder={translations.password}
+              placeholderTextColor={borderColor}
+              value={password}
+              onChangeText={handlePasswordChange}
+              secureTextEntry
+              editable={!loading}
+            />
+            {passwordError && (
+              <ThemedText style={[styles.errorText, { color: errorColor }]}>
+                {passwordError}
+              </ThemedText>
+            )}
+          </View>
         </ThemedView>
 
         <TouchableOpacity
@@ -209,5 +253,10 @@ const styles = StyleSheet.create({
   },
   verificationActions: {
     gap: 16,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 }); 
