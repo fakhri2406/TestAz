@@ -108,51 +108,47 @@ export default function TakeTestScreen() {
     try {
       setSubmitting(true);
 
-      // Calculate all statistics in frontend
-      const correctAnswers = answers.map((answer, index) => ({
+      // Calculate correct answers and prepare submission data
+      const correctAnswersCount = test.questions.reduce((count, question, index) => {
+        return count + (answers[index] === question.correctOptionIndex ? 1 : 0);
+      }, 0);
+      
+      const totalQuestions = test.questions.length;
+      const score = Math.round((correctAnswersCount / totalQuestions) * 100);
+
+      // Prepare answers array with selectedOptionIndex
+      const submissionAnswers = answers.map((selectedOptionIndex, index) => ({
         questionId: test.questions[index].id,
-        isCorrect: answer === test.questions[index].correctOptionIndex
+        selectedOptionIndex: selectedOptionIndex
       }));
 
-      const correctAnswersCount = correctAnswers.filter(a => a.isCorrect).length;
-      const totalQuestions = test.questions.length;
-      const score = totalQuestions > 0 ? Math.round((correctAnswersCount * 100.0) / totalQuestions) : 0;
-      const scoreString = `${correctAnswersCount}/${totalQuestions}`;
-
-      // Just send the final statistics to backend
+      // Submit the solution
       const solution = {
         testId: test.id,
         score: score,
-        scoreString: scoreString,
+        scoreString: `${correctAnswersCount}/${totalQuestions}`,
         totalQuestions: totalQuestions,
         correctAnswers: correctAnswersCount,
-        answers: correctAnswers
+        answers: submissionAnswers
       };
 
-      console.log('Submitting final statistics:', JSON.stringify(solution, null, 2));
+      console.log('Submitting solution:', {
+        correctAnswersCount,
+        totalQuestions,
+        score,
+        scoreString: solution.scoreString
+      });
+
       const response = await api.submitTestSolution(solution);
-      console.log('Submit solution response:', JSON.stringify(response, null, 2));
       
       // Format the ID to ensure it's a valid GUID
       const formattedId = response.id?.toString() || '';
-      console.log('Response ID:', formattedId);
-      // Add dashes if they're missing (8-4-4-4-12 format)
       const guidFormat = formattedId.length === 32 
         ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
         : formattedId;
-      console.log('Formatted GUID:', guidFormat);
       
-      // Show success message and redirect to result page
-      Alert.alert(
-        'Success', 
-        `Test submitted successfully!\n\nScore: ${scoreString}\nCorrect Answers: ${correctAnswersCount}/${totalQuestions}`,
-        [
-          { 
-            text: 'View Results', 
-            onPress: () => router.push(`/test/result/${guidFormat}`)
-          }
-        ]
-      );
+      // Redirect directly to results page
+      router.push(`/test/result/${guidFormat}`);
     } catch (error) {
       console.error('Error submitting test:', error);
       Alert.alert(

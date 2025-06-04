@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { StyleSheet, ScrollView, Alert, TouchableOpacity, Animated } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
@@ -35,7 +35,7 @@ interface TestResultDetail {
 }
 
 export default function TestResultDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const params = useLocalSearchParams();
   const [result, setResult] = useState<TestResultDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,39 +45,13 @@ export default function TestResultDetailScreen() {
 
   useEffect(() => {
     loadResult();
-  }, [id]);
+  }, [params.id]);
 
   const loadResult = async () => {
     try {
       setLoading(true);
-      const resultData = await api.getTestResultDetail(id as string);
-      console.log('Result data:', JSON.stringify(resultData, null, 2));
-
-      // Transform the data to ensure options are strings
-      const transformedData = {
-        ...resultData,
-        answers: resultData.answers.map(answer => ({
-          ...answer,
-          options: answer.options.map(option => 
-            typeof option === 'string' 
-              ? option 
-              : typeof option === 'object' && option !== null
-                ? option.text || option.Text || ''
-                : String(option)
-          )
-        }))
-      };
-
-      console.log('Transformed answers:', transformedData.answers.map(a => ({
-        questionText: a.questionText,
-        selectedIndex: a.selectedOptionIndex,
-        correctIndex: a.correctOptionIndex,
-        options: a.options,
-        isCorrect: a.isCorrect,
-        correctOption: a.correctOption
-      })));
-
-      setResult(transformedData);
+      const resultData = await api.getTestResultDetail(params.id as string);
+      setResult(resultData);
     } catch (error) {
       console.error('Error loading test result:', error);
       Alert.alert(translations.error, translations.failedToLoadTests);
@@ -112,77 +86,157 @@ export default function TestResultDetailScreen() {
         <ScrollView style={styles.scrollView}>
           <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
           <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
-            <ThemedText style={styles.scoreText}>
-              {translations.score}: {result.score}
-            </ThemedText>
-            <ThemedText style={styles.pointsText}>
-              {translations.points}: {result.earnedPoints}/{result.totalPossiblePoints}
-            </ThemedText>
-            <ThemedText style={styles.submittedText}>
-              {translations.submitted}: {new Date(result.submittedAt).toLocaleDateString()}
-            </ThemedText>
+            <ThemedView style={styles.scoreHeader}>
+              <ThemedView style={styles.scorePercentageContainer}>
+                <ThemedText style={styles.scoreText}>
+                  {result.score}%
+                </ThemedText>
+                <ThemedView style={[
+                  styles.scoreBadge,
+                  { backgroundColor: result.score >= 70 ? '#E8F5E9' : '#FFEBEE' }
+                ]}>
+                  <ThemedText style={[
+                    styles.scoreBadgeText,
+                    { color: result.score >= 70 ? '#2E7D32' : '#C62828' }
+                  ]}>
+                    {result.score >= 70 ? translations.passed : translations.failed}
+                  </ThemedText>
+                </ThemedView>
+              </ThemedView>
+            </ThemedView>
+            <ThemedView style={styles.scoreDetails}>
+              <ThemedView style={styles.scoreDetailItem}>
+                <Ionicons name="time" size={24} color="#666" />
+                <ThemedText style={styles.scoreDetailText}>
+                  {translations.submitted}: {new Date(result.submittedAt).toLocaleDateString()}
+                </ThemedText>
+              </ThemedView>
+            </ThemedView>
           </ThemedView>
 
           {result.answers.map((answer, index) => (
-            <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
+            <ThemedView key={answer.questionId} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
               <ThemedView style={styles.questionHeader}>
-                <ThemedText style={styles.questionNumber}>{translations.question} {index + 1}</ThemedText>
-                <ThemedView style={styles.questionStatus}>
-                  <ThemedText style={[
-                    styles.correctnessStatus,
-                    { color: answer.isCorrect ? '#4CAF50' : '#f44336' }
+                <ThemedView style={styles.questionNumberContainer}>
+                  <ThemedText style={styles.questionNumber}>
+                    {translations.question} {index + 1}
+                  </ThemedText>
+                  <ThemedView style={[
+                    styles.statusBadge,
+                    { backgroundColor: answer.isCorrect ? '#E8F5E9' : '#FFEBEE' }
                   ]}>
-                    {answer.isCorrect ? translations.correct : translations.incorrect}
-                  </ThemedText>
-                  <ThemedText style={styles.pointsStatus}>
-                    {translations.points}: {answer.pointsEarned}/{answer.totalPoints}
-                  </ThemedText>
+                    <ThemedText style={[
+                      styles.correctnessStatus,
+                      { color: answer.isCorrect ? '#2E7D32' : '#C62828' }
+                    ]}>
+                      {answer.isCorrect ? translations.correct : translations.incorrect}
+                    </ThemedText>
+                    <ThemedText style={[
+                      styles.pointsStatus,
+                      { color: answer.isCorrect ? '#2E7D32' : '#C62828' }
+                    ]}>
+                      {answer.pointsEarned}/{answer.totalPoints} {translations.points}
+                    </ThemedText>
+                  </ThemedView>
                 </ThemedView>
               </ThemedView>
+
               <ThemedText style={styles.questionText}>{answer.questionText}</ThemedText>
               
               <ThemedView style={styles.optionsContainer}>
-                {answer.options.map((option, optionIndex) => (
-                  <ThemedView
-                    key={optionIndex}
-                    style={[
-                      styles.optionContainer,
-                      answer.selectedOptionIndex === optionIndex && { borderColor: answer.isCorrect ? '#4CAF50' : '#f44336' },
-                      answer.correctOptionIndex === optionIndex && { borderColor: '#4CAF50' }
-                    ]}
-                  >
-                    <ThemedText style={styles.optionText}>
-                      {optionIndex + 1}. {option}
-                    </ThemedText>
-                    {answer.selectedOptionIndex === optionIndex && (
-                      <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>
-                        {answer.isCorrect ? '✓' : '✗'}
-                      </ThemedText>
-                    )}
-                    {answer.correctOptionIndex === optionIndex && answer.selectedOptionIndex !== optionIndex && (
-                      <ThemedText style={[styles.optionStatus, { color: '#4CAF50' }]}>
-                        ✓
-                      </ThemedText>
-                    )}
-                  </ThemedView>
-                ))}
+                {answer.options.map((option, optionIndex) => {
+                  const isSelected = answer.selectedOptionIndex === optionIndex;
+                  const isCorrect = answer.correctOptionIndex === optionIndex;
+                  const isSelectedCorrect = isSelected && isCorrect;
+                  const isSelectedIncorrect = isSelected && !isCorrect;
+                  const isCorrectNotSelected = !isSelected && isCorrect;
+
+                  return (
+                    <ThemedView
+                      key={optionIndex}
+                      style={[
+                        styles.optionContainer,
+                        isSelectedCorrect && styles.correctOption,
+                        isSelectedIncorrect && styles.incorrectOption,
+                        isCorrectNotSelected && styles.correctNotSelectedOption
+                      ]}
+                    >
+                      <ThemedView style={styles.optionContent}>
+                        <ThemedView style={[
+                          styles.optionCircle,
+                          isSelectedCorrect && styles.correctOptionCircle,
+                          isSelectedIncorrect && styles.incorrectOptionCircle,
+                          isCorrectNotSelected && styles.correctNotSelectedCircle
+                        ]}>
+                          <ThemedText style={[
+                            styles.optionNumber,
+                            isSelectedCorrect && styles.correctOptionText,
+                            isSelectedIncorrect && styles.incorrectOptionText,
+                            isCorrectNotSelected && styles.correctNotSelectedText
+                          ]}>
+                            {String.fromCharCode(65 + optionIndex)}
+                          </ThemedText>
+                        </ThemedView>
+                        <ThemedText style={[
+                          styles.optionText,
+                          isSelectedCorrect && styles.correctOptionText,
+                          isSelectedIncorrect && styles.incorrectOptionText,
+                          isCorrectNotSelected && styles.correctNotSelectedText
+                        ]}>
+                          {option}
+                        </ThemedText>
+                      </ThemedView>
+                      
+                      <ThemedView style={styles.optionIndicator}>
+                        {isSelectedCorrect && (
+                          <Ionicons name="checkmark-circle" size={24} color="#2E7D32" />
+                        )}
+                        {isSelectedIncorrect && (
+                          <Ionicons name="close-circle" size={24} color="#C62828" />
+                        )}
+                        {isCorrectNotSelected && (
+                          <Ionicons name="checkmark-circle-outline" size={24} color="#2E7D32" />
+                        )}
+                      </ThemedView>
+                    </ThemedView>
+                  );
+                })}
               </ThemedView>
-              {!answer.isCorrect && (
-                <ThemedView style={styles.correctAnswerContainer}>
-                  <ThemedText style={styles.correctAnswerLabel}>{translations.yourAnswer}:</ThemedText>
-                  <ThemedText style={[styles.correctAnswerText, { color: '#f44336' }]}>
-                    {answer.selectedOptionIndex >= 0 && answer.options[answer.selectedOptionIndex] 
-                      ? `${answer.selectedOptionIndex + 1}. ${answer.options[answer.selectedOptionIndex]}`
-                      : translations.noAnswerSelected}
-                  </ThemedText>
-                  <ThemedText style={[styles.correctAnswerLabel, { marginTop: 8 }]}>{translations.correctAnswer}:</ThemedText>
-                  <ThemedText style={[styles.correctAnswerText, { color: '#4CAF50' }]}>
-                    {answer.correctOption
-                      ? `${answer.correctOptionIndex + 1}. ${answer.correctOption}`
-                      : translations.noCorrectAnswerFound}
+
+              <ThemedView style={styles.answerSummary}>
+                <ThemedView style={styles.answerSummaryRow}>
+                  <ThemedView style={styles.answerSummaryLabel}>
+                    <Ionicons 
+                      name={answer.isCorrect ? "checkmark-circle" : "close-circle"} 
+                      size={20} 
+                      color={answer.isCorrect ? "#2E7D32" : "#C62828"} 
+                    />
+                    <ThemedText style={styles.answerSummaryLabelText}>
+                      {translations.yourAnswer}:
+                    </ThemedText>
+                  </ThemedView>
+                  <ThemedText style={[
+                    styles.answerSummaryValue,
+                    { color: answer.isCorrect ? "#2E7D32" : "#C62828" }
+                  ]}>
+                    {String.fromCharCode(65 + answer.selectedOptionIndex)}. {answer.options[answer.selectedOptionIndex]}
                   </ThemedText>
                 </ThemedView>
-              )}
+
+                {!answer.isCorrect && (
+                  <ThemedView style={styles.answerSummaryRow}>
+                    <ThemedView style={styles.answerSummaryLabel}>
+                      <Ionicons name="checkmark-circle" size={20} color="#2E7D32" />
+                      <ThemedText style={styles.answerSummaryLabelText}>
+                        {translations.correctAnswer}:
+                      </ThemedText>
+                    </ThemedView>
+                    <ThemedText style={[styles.answerSummaryValue, { color: "#2E7D32" }]}>
+                      {String.fromCharCode(65 + answer.correctOptionIndex)}. {answer.options[answer.correctOptionIndex]}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+              </ThemedView>
             </ThemedView>
           ))}
         </ScrollView>
@@ -224,35 +278,71 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scoreCard: {
-    padding: 16,
-    borderRadius: 8,
+    padding: 24,
+    borderRadius: 12,
     marginBottom: 24,
+    marginHorizontal: 16,
+    minHeight: 160,
+  },
+  scoreHeader: {
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  scorePercentageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    justifyContent: 'center',
+    minHeight: 80,
   },
   scoreText: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#212121',
+    lineHeight: 44,
   },
-  pointsText: {
+  scoreBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  scoreBadgeText: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
-    color: '#666',
+    lineHeight: 20,
   },
-  submittedText: {
-    fontSize: 14,
-    color: '#666',
+  scoreDetails: {
+    alignItems: 'center',
+    paddingTop: 16,
+    minHeight: 40,
   },
-  answerCard: {
+  scoreDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 24,
+  },
+  scoreDetailText: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 20,
+  },
+  questionCard: {
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
   },
   questionHeader: {
+    marginBottom: 12,
+  },
+  questionNumberContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   questionNumber: {
     fontSize: 18,
@@ -261,9 +351,11 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 16,
     marginBottom: 16,
+    lineHeight: 22,
   },
   optionsContainer: {
     gap: 8,
+    marginBottom: 16,
   },
   optionContainer: {
     flexDirection: 'row',
@@ -271,47 +363,110 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#E0E0E0',
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
+  },
+  optionContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  optionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  optionNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#757575',
   },
   optionText: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: '#212121',
   },
-  optionStatus: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  correctOption: {
+    borderColor: '#2E7D32',
+    backgroundColor: '#E8F5E9',
+  },
+  incorrectOption: {
+    borderColor: '#C62828',
+    backgroundColor: '#FFEBEE',
+  },
+  correctNotSelectedOption: {
+    borderColor: '#2E7D32',
+    backgroundColor: '#F1F8E9',
+  },
+  correctOptionCircle: {
+    backgroundColor: '#2E7D32',
+    borderColor: '#2E7D32',
+  },
+  incorrectOptionCircle: {
+    backgroundColor: '#C62828',
+    borderColor: '#C62828',
+  },
+  correctNotSelectedCircle: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#2E7D32',
+  },
+  correctOptionText: {
+    color: '#2E7D32',
+  },
+  incorrectOptionText: {
+    color: '#C62828',
+  },
+  correctNotSelectedText: {
+    color: '#2E7D32',
+  },
+  optionIndicator: {
     marginLeft: 8,
   },
-  correctnessStatus: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  correctAnswerContainer: {
-    marginTop: 12,
+  answerSummary: {
+    marginTop: 8,
     padding: 12,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
+    gap: 8,
   },
-  correctAnswerLabel: {
+  answerSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  answerSummaryLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  answerSummaryLabelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
-    marginBottom: 4,
+    color: '#757575',
   },
-  correctAnswerText: {
-    fontSize: 16,
+  answerSummaryValue: {
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: 8,
   },
-  questionStatus: {
-    alignItems: 'flex-end',
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  correctnessStatus: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   pointsStatus: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 2,
   },
 }); 
