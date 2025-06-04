@@ -16,4 +16,13 @@ public class TestRepository : Repository<Test>, ITestRepository
                 .ThenInclude(q => q.Options)
             .FirstOrDefaultAsync(t => t.Id == testId);
     }
+
+    public async Task<IEnumerable<Question>> GetTestQuestionsAsync(Guid testId)
+    {
+        return await _context.Questions
+            .Include(q => q.Options)
+            .Where(q => q.TestId == testId)
+            .OrderBy(q => q.Id)  // Maintain consistent order
+            .ToListAsync();
+    }
 }

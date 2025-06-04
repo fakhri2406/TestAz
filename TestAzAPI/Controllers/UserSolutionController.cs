@@ -58,7 +58,7 @@ public class UserSolutionController : ControllerBase
             {
                 UserSolution = solution,
                 Question = question,
-                AnswerText = "0", // We don't need to store the selected index anymore
+                AnswerText = $"{answer.selectedOptionIndex},{answer.correctOptionIndex}",
                 IsCorrect = answer.IsCorrect,
                 PointsEarned = answer.IsCorrect ? question.Points : 0
             };
@@ -98,7 +98,16 @@ public class UserSolutionController : ControllerBase
             return NotFound("Solution not found");
         }
 
-        // Transform the response to include string options
+        // Get all questions for this test directly from the database
+        var questions = await _testRepo.GetTestQuestionsAsync(solution.TestId);
+        if (questions == null || !questions.Any())
+        {
+            return NotFound("No questions found for this test");
+        }
+
+        var questionsList = questions.ToList(); // Execute the query here
+
+        // Transform the response
         var transformedSolution = new
         {
             solution.Id,
@@ -107,20 +116,34 @@ public class UserSolutionController : ControllerBase
             solution.UserId,
             UserName = $"{solution.User.Name} {solution.User.Surname}",
             solution.Score,
-            TotalQuestions = solution.Test.Questions.Count,
+            TotalQuestions = questionsList.Count,
             solution.SubmittedAt,
+            Questions = questionsList.Select(q => {
+                var orderedOptions = q.Options.OrderBy(o => o.OrderIndex).ToList();
+                var correctOptionIndex = orderedOptions.FindIndex(o => o.IsCorrect);
+                return new
+                {
+                    QuestionId = q.Id,
+                    QuestionText = q.Text,
+                    Options = orderedOptions.Select(o => o.Text).ToList(),
+                    CorrectOptionIndex = correctOptionIndex
+                };
+            }).ToList(),
             Answers = solution.Answers.Select(a => {
-                // Parse the selected option index from AnswerText
-                var selectedOptionIndex = int.TryParse(a.AnswerText, out var index) ? index : -1;
-                var orderedOptions = a.Question.Options.OrderBy(o => o.OrderIndex).ToList();
+                var indices = a.AnswerText.Split(',');
+                var selectedOptionIndex = int.TryParse(indices[0], out var selected) ? selected : -1;
+                var correctOptionIndex = int.TryParse(indices[1], out var correct) ? correct : -1;
+                var question = questionsList.FirstOrDefault(q => q.Id == a.QuestionId);
+                var orderedOptions = question?.Options.OrderBy(o => o.OrderIndex).ToList() ?? new List<AnswerOption>();
                 
                 return new
                 {
                     QuestionId = a.QuestionId,
                     QuestionText = a.Question.Text,
                     SelectedOptionIndex = selectedOptionIndex,
+                    CorrectOptionIndex = correctOptionIndex,
                     SelectedOption = selectedOptionIndex >= 0 ? orderedOptions.ElementAtOrDefault(selectedOptionIndex)?.Text : null,
-                    CorrectOption = a.Question.Options.FirstOrDefault(o => o.IsCorrect)?.Text,
+                    CorrectOption = correctOptionIndex >= 0 ? orderedOptions.ElementAtOrDefault(correctOptionIndex)?.Text : null,
                     Options = orderedOptions.Select(o => o.Text).ToList(),
                     IsCorrect = a.IsCorrect,
                     PointsEarned = a.PointsEarned,
@@ -159,4 +182,8 @@ public class UserAnswerRequest
     public required Guid QuestionId { get; set; }
     
     public bool IsCorrect { get; set; }
+    
+    public int selectedOptionIndex { get; set; }
+    
+    public int correctOptionIndex { get; set; }
 }

@@ -314,9 +314,18 @@ class ApiService {
 
   async submitTestSolution(solution: {
     testId: string;
+    score: number;
+    scoreString: string;
+    totalQuestions: number;
+    correctAnswers: number;
     answers: {
       questionId: string;
       selectedOptionIndex: number;
+      correctOptionIndex: number;
+    }[];
+    questions: {
+      questionId: string;
+      correctOptionIndex: number;
     }[];
   }) {
     try {
@@ -397,17 +406,34 @@ class ApiService {
       // Format the result data using the answer data directly from the response
       const formattedResult = {
         ...response,
-        answers: response.answers?.map(answer => ({
-          questionId: answer.questionId,
-          questionText: answer.questionText,
-          selectedOptionIndex: answer.selectedOptionIndex,
-          correctOptionIndex: answer.options.findIndex(o => o === answer.correctOption),
-          options: answer.options,
-          correctOption: answer.correctOption,
-          isCorrect: answer.isCorrect,
-          pointsEarned: answer.pointsEarned || 0,
-          totalPoints: answer.totalPoints || 1
-        })) || []
+        questions: response.questions?.map(q => ({
+          questionId: q.questionId,
+          questionText: q.questionText,
+          options: q.options,
+          correctOptionIndex: q.correctOptionIndex
+        })) || [],
+        answers: response.answers?.map(answer => {
+          // Calculate isCorrect by comparing selectedOptionIndex with correctOptionIndex
+          const isCorrect = answer.selectedOptionIndex === answer.correctOptionIndex;
+          console.log('Answer correctness:', {
+            questionId: answer.questionId,
+            selectedOptionIndex: answer.selectedOptionIndex,
+            correctOptionIndex: answer.correctOptionIndex,
+            isCorrect
+          });
+          
+          return {
+            questionId: answer.questionId,
+            questionText: answer.questionText,
+            selectedOptionIndex: answer.selectedOptionIndex,
+            correctOptionIndex: answer.correctOptionIndex,
+            options: answer.options,
+            correctOption: answer.correctOption,
+            isCorrect,
+            pointsEarned: answer.pointsEarned || 0,
+            totalPoints: answer.totalPoints || 1
+          };
+        }) || []
       };
 
       console.log('Formatted test result:', formattedResult);

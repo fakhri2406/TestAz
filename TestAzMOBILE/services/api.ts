@@ -70,9 +70,18 @@ interface Test {
 
 interface TestSolution {
   testId: string;
+  score: number;
+  scoreString: string;
+  totalQuestions: number;
+  correctAnswers: number;
   answers: {
     questionId: string;
     selectedOptionIndex: number;
+    correctOptionIndex: number;
+  }[];
+  questions: {
+    questionId: string;
+    correctOptionIndex: number;
   }[];
 }
 

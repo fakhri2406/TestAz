@@ -119,7 +119,8 @@ export default function TakeTestScreen() {
       // Prepare answers array with selectedOptionIndex
       const submissionAnswers = answers.map((selectedOptionIndex, index) => ({
         questionId: test.questions[index].id,
-        selectedOptionIndex: selectedOptionIndex
+        selectedOptionIndex: selectedOptionIndex,
+        correctOptionIndex: test.questions[index].correctOptionIndex
       }));
 
       // Submit the solution
@@ -129,14 +130,19 @@ export default function TakeTestScreen() {
         scoreString: `${correctAnswersCount}/${totalQuestions}`,
         totalQuestions: totalQuestions,
         correctAnswers: correctAnswersCount,
-        answers: submissionAnswers
+        answers: submissionAnswers,
+        questions: test.questions.map(q => ({
+          questionId: q.id,
+          correctOptionIndex: q.correctOptionIndex
+        }))
       };
 
       console.log('Submitting solution:', {
         correctAnswersCount,
         totalQuestions,
         score,
-        scoreString: solution.scoreString
+        scoreString: solution.scoreString,
+        questions: solution.questions
       });
 
       const response = await api.submitTestSolution(solution);
