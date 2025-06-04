@@ -156,34 +156,69 @@ export default function TestsScreen() {
         <ThemedView style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={64} color={tintColor} />
           <ThemedText style={styles.emptyText}>{translations.noTestsFound}</ThemedText>
+          {isAdmin && (
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: tintColor }]}
+              onPress={handleAddTest}
+            >
+              <Ionicons name="add" size={24} color={backgroundColor} />
+              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
+                {translations.addNewTest}
+              </ThemedText>
+            </TouchableOpacity>
+          )}
         </ThemedView>
       ) : (
         <>
-          {isPremium && (
-            <ThemedView style={[styles.filterContainer, { backgroundColor: cardBackgroundColor }]}>
-              <TouchableOpacity
-                style={[styles.filterButton, showPremiumOnly && { backgroundColor: tintColor }]}
-                onPress={() => setShowPremiumOnly(!showPremiumOnly)}
-              >
-                <Ionicons 
-                  name="star" 
-                  size={20} 
-                  color={showPremiumOnly ? backgroundColor : tintColor} 
-                />
-                <ThemedText 
-                  style={[
-                    styles.filterButtonText, 
-                    { color: showPremiumOnly ? backgroundColor : tintColor }
-                  ]}
+          <ThemedView style={styles.headerContainer}>
+            <ThemedView style={styles.filterContainer}>
+              {isPremium && (
+                <TouchableOpacity
+                  style={[styles.filterButton, showPremiumOnly && { backgroundColor: tintColor }]}
+                  onPress={() => setShowPremiumOnly(!showPremiumOnly)}
                 >
-                  {showPremiumOnly ? translations.showAllTests : translations.showPremiumTests}
+                  <Ionicons 
+                    name="star" 
+                    size={20} 
+                    color={showPremiumOnly ? backgroundColor : tintColor} 
+                  />
+                  <ThemedText 
+                    style={[
+                      styles.filterButtonText, 
+                      { color: showPremiumOnly ? backgroundColor : tintColor }
+                    ]}
+                  >
+                    {showPremiumOnly ? translations.showAllTests : translations.showPremiumTests}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+            </ThemedView>
+            <ThemedView style={styles.actionButtonsContainer}>
+              {isAdmin && (
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: tintColor }]}
+                  onPress={handleAddTest}
+                >
+                  <Ionicons name="add" size={24} color={backgroundColor} />
+                  <ThemedText style={[styles.actionButtonText, { color: backgroundColor }]}>
+                    {translations.addNewTest}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: cardBackgroundColor }]}
+                onPress={onRefresh}
+              >
+                <Ionicons name="refresh" size={24} color={tintColor} />
+                <ThemedText style={[styles.actionButtonText, { color: tintColor }]}>
+                  {translations.refresh}
                 </ThemedText>
               </TouchableOpacity>
             </ThemedView>
-          )}
+          </ThemedView>
 
           <FlatList
-            data={tests}
+            data={filteredTests}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -206,6 +241,14 @@ export default function TestsScreen() {
                       </TouchableOpacity>
                     )}
                   </ThemedView>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteTest(item.id)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#dc3545" />
+                    </TouchableOpacity>
+                  )}
                 </ThemedView>
                 <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
               </TouchableOpacity>
@@ -220,24 +263,6 @@ export default function TestsScreen() {
               />
             }
           />
-          
-          {isAdmin && (
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: tintColor }]}
-              onPress={handleAddTest}
-            >
-              <Ionicons name="add" size={24} color={backgroundColor} />
-              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                {translations.addNewTest}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.reloadButton, { backgroundColor: cardBackgroundColor }]}
-            onPress={onRefresh}
-          >
-            <Ionicons name="refresh" size={24} color={tintColor} />
-          </TouchableOpacity>
         </>
       )}
     </ThemedView>
@@ -354,6 +379,27 @@ const styles = StyleSheet.create({
   filterButtonText: {
     marginLeft: 8,
     fontSize: 14,
+    fontWeight: '600',
+  },
+  headerContainer: {
+    padding: 15,
+    gap: 10,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 10,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    gap: 5,
+  },
+  actionButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 }); 
