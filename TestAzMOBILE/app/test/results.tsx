@@ -105,7 +105,7 @@ export default function TestResultsScreen() {
             <ThemedView style={styles.resultHeader}>
               <ThemedText style={styles.testTitle}>{item.testTitle}</ThemedText>
               <ThemedText style={styles.score}>
-                Score: {item.score}/{item.totalQuestions}
+                Score: {item.score}
               </ThemedText>
             </ThemedView>
             <ThemedView style={styles.resultDetails}>

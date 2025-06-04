@@ -22,6 +22,5 @@ public class Question
     public ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
 
     public QuestionType Type { get; set; }
-    public int CorrectOptionIndex { get; set; }
     public string? CorrectAnswer { get; set; }
 }

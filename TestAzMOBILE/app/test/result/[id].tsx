@@ -18,6 +18,8 @@ interface TestResultDetail {
   score: number;
   totalQuestions: number;
   submittedAt: string;
+  totalPossiblePoints: number;
+  earnedPoints: number;
   answers: Array<{
     questionId: string;
     questionText: string;
@@ -26,6 +28,8 @@ interface TestResultDetail {
     options: string[];
     isCorrect: boolean;
     correctOption: string;
+    pointsEarned: number;
+    totalPoints: number;
   }>;
 }
 
@@ -108,7 +112,10 @@ export default function TestResultDetailScreen() {
           <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
           <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
             <ThemedText style={styles.scoreText}>
-              Score: {result.score.toFixed(1)}%
+              Score: {result.score}
+            </ThemedText>
+            <ThemedText style={styles.pointsText}>
+              Points: {result.earnedPoints}/{result.totalPossiblePoints}
             </ThemedText>
             <ThemedText style={styles.submittedText}>
               Submitted: {new Date(result.submittedAt).toLocaleDateString()}
@@ -119,12 +126,17 @@ export default function TestResultDetailScreen() {
             <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
               <ThemedView style={styles.questionHeader}>
                 <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
-                <ThemedText style={[
-                  styles.correctnessStatus,
-                  { color: answer.isCorrect ? '#4CAF50' : '#f44336' }
-                ]}>
-                  {answer.isCorrect ? 'Correct' : 'Incorrect'}
-                </ThemedText>
+                <ThemedView style={styles.questionStatus}>
+                  <ThemedText style={[
+                    styles.correctnessStatus,
+                    { color: answer.isCorrect ? '#4CAF50' : '#f44336' }
+                  ]}>
+                    {answer.isCorrect ? 'Correct' : 'Incorrect'}
+                  </ThemedText>
+                  <ThemedText style={styles.pointsStatus}>
+                    Points: {answer.pointsEarned}/{answer.totalPoints}
+                  </ThemedText>
+                </ThemedView>
               </ThemedView>
               <ThemedText style={styles.questionText}>{answer.questionText}</ThemedText>
               
@@ -144,6 +156,11 @@ export default function TestResultDetailScreen() {
                     {answer.selectedOptionIndex === optionIndex && (
                       <ThemedText style={[styles.optionStatus, { color: answer.isCorrect ? '#4CAF50' : '#f44336' }]}>
                         {answer.isCorrect ? '✓' : '✗'}
+                      </ThemedText>
+                    )}
+                    {answer.correctOptionIndex === optionIndex && answer.selectedOptionIndex !== optionIndex && (
+                      <ThemedText style={[styles.optionStatus, { color: '#4CAF50' }]}>
+                        ✓
                       </ThemedText>
                     )}
                   </ThemedView>
@@ -215,6 +232,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
+  pointsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#666',
+  },
   submittedText: {
     fontSize: 14,
     color: '#666',
@@ -281,5 +304,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 8,
+  },
+  questionStatus: {
+    alignItems: 'flex-end',
+  },
+  pointsStatus: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
 }); 

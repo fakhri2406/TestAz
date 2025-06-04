@@ -29,7 +29,21 @@ public class TestController : ControllerBase
     public async Task<IActionResult> Get(Guid id)
     {
         var test = await _testRepo.GetTestWithQuestionsAsync(id);
-        return test == null ? NotFound() : Ok(test);
+        if (test == null) return NotFound();
+
+        // Add logging to see the test data
+        Console.WriteLine($"Test retrieved: {test.Title}");
+        foreach (var question in test.Questions)
+        {
+            Console.WriteLine($"Question: {question.Text}");
+            Console.WriteLine("Options:");
+            foreach (var option in question.Options.OrderBy(o => o.OrderIndex))
+            {
+                Console.WriteLine($"  - {option.Text} (OrderIndex: {option.OrderIndex}, IsCorrect: {option.IsCorrect})");
+            }
+        }
+
+        return Ok(test);
     }
 
     [Authorize(Roles = "Admin")]
@@ -53,17 +67,18 @@ public class TestController : ControllerBase
                     Text = q.Text,
                     Test = test,
                     Options = new List<AnswerOption>(),
-                    Type = QuestionType.MultipleChoice,
-                    CorrectOptionIndex = q.CorrectOptionIndex
+                    Type = QuestionType.MultipleChoice
                 };
 
+                // Add options with proper OrderIndex
                 for (int i = 0; i < q.Options.Count; i++)
                 {
                     question.Options.Add(new AnswerOption
                     {
-                        Text = q.Options[i],
-                        IsCorrect = i == q.CorrectOptionIndex,
-                        Question = question
+                        Text = q.Options[i].Text,
+                        IsCorrect = q.Options[i].IsCorrect,
+                        Question = question,
+                        OrderIndex = i // Set proper order index
                     });
                 }
 
@@ -72,6 +87,19 @@ public class TestController : ControllerBase
 
             await _testRepo.AddAsync(test);
             await _testRepo.SaveChangesAsync();
+
+            // Log the created test for verification
+            Console.WriteLine($"Created test: {test.Title}");
+            foreach (var question in test.Questions)
+            {
+                Console.WriteLine($"Question: {question.Text}");
+                Console.WriteLine("Options:");
+                foreach (var option in question.Options.OrderBy(o => o.OrderIndex))
+                {
+                    Console.WriteLine($"  - {option.Text} (OrderIndex: {option.OrderIndex}, IsCorrect: {option.IsCorrect})");
+                }
+            }
+
             return CreatedAtAction(nameof(Get), new { id = test.Id }, test);
         }
         catch (Exception ex)
@@ -100,6 +128,33 @@ public class TestController : ControllerBase
         await _testRepo.SaveChangesAsync();
         return NoContent();
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("fix-order-indices")]
+    public async Task<IActionResult> FixOrderIndices()
+    {
+        try
+        {
+            var tests = await _testRepo.GetAllAsync();
+            foreach (var test in tests)
+            {
+                foreach (var question in test.Questions)
+                {
+                    var orderedOptions = question.Options.OrderBy(o => o.Id).ToList();
+                    for (int i = 0; i < orderedOptions.Count; i++)
+                    {
+                        orderedOptions[i].OrderIndex = i;
+                    }
+                }
+            }
+            await _testRepo.SaveChangesAsync();
+            return Ok(new { message = "Order indices fixed successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
 public class CreateTestRequest
@@ -122,7 +177,13 @@ public class CreateQuestionRequest
     public required string Text { get; set; }
     
     [Required]
-    public required List<string> Options { get; set; }
+    public required List<CreateOptionRequest> Options { get; set; }
+}
+
+public class CreateOptionRequest
+{
+    [Required]
+    public required string Text { get; set; }
     
-    public int CorrectOptionIndex { get; set; }
+    public bool IsCorrect { get; set; }
 }
