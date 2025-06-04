@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  ToastAndroid,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +16,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 import { API_URL } from '@/constants/Config';
+import { AuthError, ValidationError, isAuthError, isValidationError } from '@/utils/errors';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -34,14 +36,22 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    try {
-      await login(email, password);
+    const result = await login(email, password);
+    
+    if (result.success) {
       router.replace('/(tabs)');
-    } catch (error) {
-      Alert.alert(translations.error, error instanceof Error ? error.message : translations.loginFailed);
-    } finally {
-      setLoading(false);
+    } else {
+      // Show notification for login failure
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(result.message || translations.loginFailed, ToastAndroid.SHORT);
+      } else {
+        // For iOS, use a non-blocking alert
+        setTimeout(() => {
+          Alert.alert('', result.message || translations.loginFailed, [{ text: 'OK' }], { cancelable: true });
+        }, 100);
+      }
     }
+    setLoading(false);
   };
 
   return (

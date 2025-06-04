@@ -1,6 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api';
+import { AuthError, ValidationError } from '../utils/errors';
+import { translations } from '@/constants/translations';
 
 class ApiService {
   private baseUrl: string;
@@ -31,30 +33,43 @@ class ApiService {
     return response.data;
   }
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
     try {
-      console.log('Attempting login with:', { email });
       const response = await this.post('/api/auth/login', { email, password });
-      console.log('Login response:', response);
       
       if (response.token) {
         await AsyncStorage.setItem('token', response.token);
         if (response.user) {
           await AsyncStorage.setItem('user', JSON.stringify(response.user));
         }
+        return { success: true };
       }
-      return response;
+      return { success: false, message: translations.loginFailed };
     } catch (error) {
-      console.error('Login error:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-        throw new Error(error.response?.data?.message || error.message);
+        const status = error.response?.status;
+        const data = error.response?.data;
+
+        // Handle login-related errors (400 and 401)
+        if (status === 401 || (status === 400 && data?.errors)) {
+          const errors = data?.errors || {};
+          if (errors.Email || errors.Password) {
+            return { success: false, message: 'E-poçt və ya şifrə yanlışdır' };
+          }
+          return { success: false, message: 'E-poçt və ya şifrə yanlışdır' };
+        }
+
+        // Handle validation errors
+        if (status === 400 && data?.errors) {
+          return { success: false, message: data.message || 'Validation error occurred' };
+        }
+
+        // Handle other API errors
+        return { success: false, message: data?.message || error.message };
       }
-      throw error;
+      
+      // Handle non-Axios errors
+      return { success: false, message: translations.loginFailed };
     }
   }
 
