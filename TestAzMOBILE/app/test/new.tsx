@@ -75,12 +75,12 @@ export default function NewTestScreen() {
     try {
       // Validate form
       if (!title.trim()) {
-        Alert.alert('Error', 'Please enter a test title');
+        Alert.alert(translations.error, translations.pleaseEnter + ' ' + translations.testTitle);
         return;
       }
 
       if (!description.trim()) {
-        Alert.alert('Error', 'Please enter a test description');
+        Alert.alert(translations.error, translations.pleaseEnter + ' ' + translations.testDescription);
         return;
       }
 
@@ -91,7 +91,7 @@ export default function NewTestScreen() {
       );
 
       if (invalidQuestions) {
-        Alert.alert('Error', 'Please fill in all questions and options correctly, and mark one option as correct for each question');
+        Alert.alert(translations.error, translations.pleaseFillQuestionsCorrectly);
         return;
       }
 
@@ -106,12 +106,12 @@ export default function NewTestScreen() {
       };
 
       await api.createTest(testData);
-      Alert.alert('Success', 'Test created successfully', [
-        { text: 'OK', onPress: () => router.back() }
+      Alert.alert(translations.success, translations.testCreated, [
+        { text: translations.ok, onPress: () => router.back() }
       ]);
     } catch (error) {
       console.error('Error creating test:', error);
-      Alert.alert('Error', 'Failed to create test. Please try again.');
+      Alert.alert(translations.error, translations.failedToCreate);
     }
   };
 
@@ -124,21 +124,21 @@ export default function NewTestScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
           <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
-            Return to Tests
+            {translations.returnToTests}
           </ThemedText>
         </TouchableOpacity>
 
         <ScrollView style={styles.scrollView}>
           <ThemedTextInput
             style={styles.input}
-            placeholder="Test Title"
+            placeholder={translations.testTitle}
             value={title}
             onChangeText={setTitle}
           />
 
           <ThemedTextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Test Description"
+            placeholder={translations.testDescription}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -146,7 +146,7 @@ export default function NewTestScreen() {
           />
 
           <ThemedView style={[styles.premiumContainer, { backgroundColor: cardBackgroundColor }]}>
-            <ThemedText style={styles.premiumLabel}>Premium Test</ThemedText>
+            <ThemedText style={styles.premiumLabel}>{translations.premiumTest}</ThemedText>
             <Switch
               value={isPremium}
               onValueChange={setIsPremium}
@@ -157,11 +157,11 @@ export default function NewTestScreen() {
 
           {questions.map((question, qIndex) => (
             <ThemedView key={qIndex} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
-              <ThemedText style={styles.questionNumber}>Question {qIndex + 1}</ThemedText>
+              <ThemedText style={styles.questionNumber}>{translations.question} {qIndex + 1}</ThemedText>
               
               <ThemedTextInput
                 style={styles.input}
-                placeholder="Question Text"
+                placeholder={translations.questionText}
                 value={question.text}
                 onChangeText={(text) => updateQuestion(qIndex, 'text', text)}
               />
@@ -170,7 +170,7 @@ export default function NewTestScreen() {
                 <ThemedView key={oIndex} style={[styles.optionContainer, { backgroundColor: cardBackgroundColor }]}>
                   <ThemedTextInput
                     style={styles.optionInput}
-                    placeholder={`Option ${oIndex + 1}`}
+                    placeholder={translations.option + ' ' + (oIndex + 1)}
                     value={option.text}
                     onChangeText={(text) => updateOption(qIndex, oIndex, 'text', text)}
                   />
@@ -185,7 +185,7 @@ export default function NewTestScreen() {
                       styles.correctButtonText,
                       option.isCorrect && styles.correctButtonTextActive
                     ]}>
-                      {option.isCorrect ? 'Correct' : 'Mark Correct'}
+                      {option.isCorrect ? translations.correct : translations.markCorrect}
                     </ThemedText>
                   </TouchableOpacity>
                 </ThemedView>
@@ -195,7 +195,7 @@ export default function NewTestScreen() {
                 style={styles.removeButton}
                 onPress={() => removeQuestion(qIndex)}
               >
-                <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
+                <ThemedText style={styles.removeButtonText}>{translations.remove}</ThemedText>
               </TouchableOpacity>
             </ThemedView>
           ))}
@@ -205,7 +205,7 @@ export default function NewTestScreen() {
             onPress={addQuestion}
           >
             <ThemedText style={[styles.addQuestionText, { color: tintColor }]}>
-              Add Question
+              {translations.addQuestion}
             </ThemedText>
           </TouchableOpacity>
         </ScrollView>
@@ -215,7 +215,7 @@ export default function NewTestScreen() {
           onPress={handleSubmit}
         >
           <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
-            Create Test
+            {translations.createTest}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

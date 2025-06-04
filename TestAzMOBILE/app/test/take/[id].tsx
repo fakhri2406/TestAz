@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
+import { translations } from '@/constants/translations';
 
 interface Question {
   id: string;
@@ -153,8 +154,8 @@ export default function TakeTestScreen() {
     } catch (error) {
       console.error('Error submitting test:', error);
       Alert.alert(
-        'Error', 
-        error instanceof Error ? error.message : 'Failed to submit test. Please try again.'
+        translations.error,
+        translations.failedToSubmit
       );
     } finally {
       setSubmitting(false);
@@ -164,7 +165,7 @@ export default function TakeTestScreen() {
   if (loading || !test) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ThemedText>Loading test...</ThemedText>
+        <ThemedText>{translations.loadingTest}</ThemedText>
       </ThemedView>
     );
   }
@@ -178,7 +179,7 @@ export default function TakeTestScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
           <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
-            Return to Tests
+            {translations.returnToTests}
           </ThemedText>
         </TouchableOpacity>
 
@@ -188,7 +189,9 @@ export default function TakeTestScreen() {
 
           {test.questions.map((question, questionIndex) => (
             <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
-              <ThemedText style={styles.questionNumber}>Question {questionIndex + 1}</ThemedText>
+              <ThemedText style={styles.questionNumber}>
+                {translations.question} {questionIndex + 1}
+              </ThemedText>
               <ThemedText style={styles.questionText}>{question.text}</ThemedText>
 
               {question.options.map((option, optionIndex) => (
@@ -200,7 +203,7 @@ export default function TakeTestScreen() {
                   ]}
                   onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
                 >
-                  <ThemedText style={styles.optionText}>{String(option)}</ThemedText>
+                  <ThemedText style={styles.optionText}>{option}</ThemedText>
                   {answers[questionIndex] === optionIndex && (
                     <Ionicons name="checkmark-circle" size={24} color={tintColor} />
                   )}
@@ -216,7 +219,7 @@ export default function TakeTestScreen() {
           disabled={submitting}
         >
           <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
-            {submitting ? 'Submitting...' : 'Submit Test'}
+            {submitting ? translations.submitting : translations.submitTest}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

@@ -8,6 +8,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenshotPrevention } from '@/components/ScreenshotPrevention';
+import { translations } from '@/constants/translations';
 
 interface TestResultDetail {
   id: string;
@@ -79,7 +80,7 @@ export default function TestResultDetailScreen() {
       setResult(transformedData);
     } catch (error) {
       console.error('Error loading test result:', error);
-      Alert.alert('Error', 'Failed to load test result. Please try again.');
+      Alert.alert(translations.error, translations.failedToLoadTests);
       router.back();
     } finally {
       setLoading(false);
@@ -89,7 +90,7 @@ export default function TestResultDetailScreen() {
   if (loading || !result) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ThemedText>Loading result...</ThemedText>
+        <ThemedText>{translations.loading}</ThemedText>
       </ThemedView>
     );
   }
@@ -104,7 +105,7 @@ export default function TestResultDetailScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
           <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
-            Return to Tests
+            {translations.back}
           </ThemedText>
         </TouchableOpacity>
 
@@ -112,29 +113,29 @@ export default function TestResultDetailScreen() {
           <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
           <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
             <ThemedText style={styles.scoreText}>
-              Score: {result.score}
+              {translations.score}: {result.score}
             </ThemedText>
             <ThemedText style={styles.pointsText}>
-              Points: {result.earnedPoints}/{result.totalPossiblePoints}
+              {translations.points}: {result.earnedPoints}/{result.totalPossiblePoints}
             </ThemedText>
             <ThemedText style={styles.submittedText}>
-              Submitted: {new Date(result.submittedAt).toLocaleDateString()}
+              {translations.submitted}: {new Date(result.submittedAt).toLocaleDateString()}
             </ThemedText>
           </ThemedView>
 
           {result.answers.map((answer, index) => (
             <ThemedView key={answer.questionId} style={[styles.answerCard, { backgroundColor: cardBackgroundColor }]}>
               <ThemedView style={styles.questionHeader}>
-                <ThemedText style={styles.questionNumber}>Question {index + 1}</ThemedText>
+                <ThemedText style={styles.questionNumber}>{translations.question} {index + 1}</ThemedText>
                 <ThemedView style={styles.questionStatus}>
                   <ThemedText style={[
                     styles.correctnessStatus,
                     { color: answer.isCorrect ? '#4CAF50' : '#f44336' }
                   ]}>
-                    {answer.isCorrect ? 'Correct' : 'Incorrect'}
+                    {answer.isCorrect ? translations.correct : translations.incorrect}
                   </ThemedText>
                   <ThemedText style={styles.pointsStatus}>
-                    Points: {answer.pointsEarned}/{answer.totalPoints}
+                    {translations.points}: {answer.pointsEarned}/{answer.totalPoints}
                   </ThemedText>
                 </ThemedView>
               </ThemedView>
@@ -168,17 +169,17 @@ export default function TestResultDetailScreen() {
               </ThemedView>
               {!answer.isCorrect && (
                 <ThemedView style={styles.correctAnswerContainer}>
-                  <ThemedText style={styles.correctAnswerLabel}>Your Answer:</ThemedText>
+                  <ThemedText style={styles.correctAnswerLabel}>{translations.yourAnswer}:</ThemedText>
                   <ThemedText style={[styles.correctAnswerText, { color: '#f44336' }]}>
                     {answer.selectedOptionIndex >= 0 && answer.options[answer.selectedOptionIndex] 
                       ? `${answer.selectedOptionIndex + 1}. ${answer.options[answer.selectedOptionIndex]}`
-                      : 'No answer selected'}
+                      : translations.noAnswerSelected}
                   </ThemedText>
-                  <ThemedText style={[styles.correctAnswerLabel, { marginTop: 8 }]}>Correct Answer:</ThemedText>
+                  <ThemedText style={[styles.correctAnswerLabel, { marginTop: 8 }]}>{translations.correctAnswer}:</ThemedText>
                   <ThemedText style={[styles.correctAnswerText, { color: '#4CAF50' }]}>
                     {answer.correctOption
                       ? `${answer.correctOptionIndex + 1}. ${answer.correctOption}`
-                      : 'No correct answer found'}
+                      : translations.noCorrectAnswerFound}
                   </ThemedText>
                 </ThemedView>
               )}

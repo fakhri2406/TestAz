@@ -50,7 +50,10 @@ export default function TestsScreen() {
       setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
-      setTests([]);
+      Alert.alert(
+        translations.error,
+        translations.failedToLoadTests
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -143,7 +146,7 @@ export default function TestsScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={tintColor} />
+        <ThemedText>{translations.loading}</ThemedText>
       </ThemedView>
     );
   }
@@ -152,18 +155,8 @@ export default function TestsScreen() {
     <ThemedView style={styles.container}>
       {tests.length === 0 ? (
         <ThemedView style={styles.emptyContainer}>
-          <ThemedText style={styles.emptyText}>Mövcud test tapılmadı</ThemedText>
-          {isAdmin && (
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: tintColor }]}
-              onPress={handleAddTest}
-            >
-              <Ionicons name="add" size={24} color={backgroundColor} />
-              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                {translations.addNewTest}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+          <Ionicons name="document-text-outline" size={64} color={tintColor} />
+          <ThemedText style={styles.emptyText}>{translations.noTestsFound}</ThemedText>
         </ThemedView>
       ) : (
         <>
@@ -172,46 +165,19 @@ export default function TestsScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[
-                  styles.testItem, 
-                  { 
-                    backgroundColor: cardBackgroundColor,
-                    opacity: item.isPremium && !isPremium ? 0.7 : 1,
-                    borderWidth: item.isPremium ? 2 : 0,
-                    borderColor: tintColor
-                  }
-                ]}
-                onPress={() => handleTestPress(item)}
+                style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => router.push(`/test/take/${item.id}`)}
               >
                 <ThemedView style={styles.testHeader}>
-                  <ThemedView style={styles.titleContainer}>
-                    <ThemedText type="title" style={styles.testTitle}>{item.title}</ThemedText>
-                    {item.isPremium && (
-                      <ThemedView style={[styles.premiumBadge, { backgroundColor: tintColor }]}>
-                        {!isPremium ? (
-                          <Ionicons name="lock-closed" size={16} color="#fff" />
-                        ) : (
-                          <Ionicons name="star" size={16} color="#fff" />
-                        )}
-                        <ThemedText style={styles.premiumText}>
-                          {!isPremium ? 'Locked' : 'Premium'}
-                        </ThemedText>
-                      </ThemedView>
-                    )}
-                  </ThemedView>
-                  <ThemedView style={styles.headerRight}>
-                    <ThemedText type="subtitle" style={styles.testScore}>
-                      {translations.score}: {item.score || 0}
-                    </ThemedText>
-                    {isAdmin && (
-                      <TouchableOpacity
-                        style={styles.deleteButton}
-                        onPress={() => handleDeleteTest(item.id)}
-                      >
-                        <Ionicons name="trash-outline" size={24} color="#ff3b30" />
-                      </TouchableOpacity>
-                    )}
-                  </ThemedView>
+                  <ThemedText style={styles.testTitle}>{item.title}</ThemedText>
+                  {item.isPremium && (
+                    <ThemedView style={[styles.premiumBadge, { backgroundColor: tintColor }]}>
+                      <Ionicons name="star" size={16} color={backgroundColor} />
+                      <ThemedText style={[styles.premiumText, { color: backgroundColor }]}>
+                        {translations.premium}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
                 </ThemedView>
                 <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
               </TouchableOpacity>
@@ -273,7 +239,7 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
   },
-  testItem: {
+  testCard: {
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -287,9 +253,6 @@ const styles = StyleSheet.create({
   testTitle: {
     fontSize: 18,
     fontWeight: '600',
-  },
-  testScore: {
-    fontSize: 16,
   },
   testDescription: {
     fontSize: 14,
