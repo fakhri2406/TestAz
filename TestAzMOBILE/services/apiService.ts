@@ -45,48 +45,29 @@ class ApiService {
 
   async login(email: string, password: string) {
     try {
-      console.log('Attempting login with email:', email);
       const response = await this.post('/api/auth/login', { email, password });
-      console.log('Login response:', response);
       
       if (!response.token || !response.user) {
-        return { success: false, message: response.message || 'Login failed' };
+        return { success: false, message: 'Login failed' };
       }
 
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      // Silently handle errors and return appropriate warning messages
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const data = error.response?.data;
 
-        if (status === 401) {
-          return { 
-            success: false, 
-            message: data?.message || 'Invalid credentials' 
-          };
+        switch (status) {
+          case 401:
+            return { success: false, message: 'Invalid email or password' };
+          case 400:
+            return { success: false, message: 'Please check your email and password format' };
+          default:
+            return { success: false, message: 'Unable to connect to the server' };
         }
-
-        if (status === 400 && data?.errors) {
-          const errors = data.errors;
-          if (errors.Email || errors.Password) {
-            return { 
-              success: false, 
-              message: 'Invalid email or password format' 
-            };
-          }
-        }
-
-        return { 
-          success: false, 
-          message: data?.message || error.message || 'Login failed' 
-        };
       }
       
-      return { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Login failed' 
-      };
+      return { success: false, message: 'Unable to connect to the server' };
     }
   }
 

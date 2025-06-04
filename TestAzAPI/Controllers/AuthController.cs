@@ -110,7 +110,10 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginDto login)
     {
         var user = await _userRepo.GetByEmailAsync(login.Email);
-        if (user == null || !PasswordService.VerifyPassword(login.Password, user.PasswordHash, user.PasswordSalt))
+        if (user == null)
+            return Unauthorized("Invalid credentials");
+
+        if (!PasswordService.VerifyPassword(login.Password, user.PasswordHash, user.PasswordSalt))
             return Unauthorized("Invalid credentials");
 
         if (!user.IsEmailVerified)

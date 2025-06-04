@@ -328,5 +328,15 @@ export const api = {
       console.error('Verify code error:', error);
       throw error;
     }
+  },
+
+  upgradeToPremium: async () => {
+    try {
+      const response = await apiService.upgradeToPremium();
+      return response;
+    } catch (error) {
+      console.error('Upgrade to premium error:', error);
+      throw error;
+    }
   }
 }; 
