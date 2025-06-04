@@ -310,17 +310,50 @@ class ApiService {
   async getTestResultDetail(id: string) {
     try {
       console.log('Getting test result detail:', id);
-      // Format the ID to ensure it's a valid GUID
       const formattedId = id.replace(/[^0-9a-fA-F-]/g, '');
-      // Add dashes if they're missing (8-4-4-4-12 format)
       const guidFormat = formattedId.length === 32 
         ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
         : formattedId;
       console.log('Formatted GUID:', guidFormat);
       
       const response = await this.get(`/api/usersolution/${guidFormat}`);
-      console.log('Test result detail response:', response);
-      return response;
+      console.log('Raw test result detail response:', response);
+
+      // Format the result data
+      const formattedResult = {
+        ...response,
+        answers: response.test?.questions?.map((question, index) => {
+          const userAnswer = response.answers?.find(a => a.questionId === question.id);
+          const selectedIndex = userAnswer ? parseInt(userAnswer.answerText) : -1;
+          const correctIndex = typeof question.correctOptionIndex === 'number' ? question.correctOptionIndex : -1;
+          const options = question.options?.map(o => typeof o === 'string' ? o : o.text || '') || [];
+          const correctOption = correctIndex >= 0 && options[correctIndex] ? options[correctIndex] : '';
+
+          console.log('Question data:', {
+            questionText: question.text,
+            selectedIndex,
+            correctIndex,
+            options,
+            correctOption,
+            rawQuestion: question
+          });
+
+          return {
+            questionId: question.id || '',
+            questionText: question.text || '',
+            selectedOptionIndex: selectedIndex,
+            correctOptionIndex: correctIndex,
+            options: options,
+            correctOption: correctOption,
+            isCorrect: selectedIndex === correctIndex,
+            pointsEarned: userAnswer?.pointsEarned || 0,
+            totalPoints: question.points || 1
+          };
+        }) || []
+      };
+
+      console.log('Formatted test result:', formattedResult);
+      return formattedResult;
     } catch (error) {
       console.error('Error getting test result detail:', error);
       if (axios.isAxiosError(error)) {
