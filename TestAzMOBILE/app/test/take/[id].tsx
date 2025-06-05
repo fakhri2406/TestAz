@@ -57,14 +57,14 @@ export default function TakeTestScreen() {
                 options: q.options
               });
 
-              // Find the correct option index by looking at IsCorrect flag
-              const orderedOptions = q.options.sort((a, b) => a.orderIndex - b.orderIndex);
-              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect);
+              // Sort options by orderIndex and keep the full object
+              const orderedOptions = [...q.options].sort((a, b) => a.orderIndex - b.orderIndex);
+              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect) >= 0 ? orderedOptions.findIndex(opt => opt.isCorrect) : -1;
 
               const formattedQuestion = {
                 id: q.id || '',
                 text: q.text || '',
-                options: orderedOptions.map(opt => opt.text || ''),
+                options: orderedOptions, // keep full option objects
                 correctOptionIndex: correctOptionIndex
               };
 
@@ -107,38 +107,54 @@ export default function TakeTestScreen() {
 
     try {
       setSubmitting(true);
+
+      // Calculate correct answers and prepare submission data
+      const correctAnswersCount = test.questions.reduce((count, question, index) => {
+        return count + (answers[index] === question.correctOptionIndex ? 1 : 0);
+      }, 0);
+      
+      const totalQuestions = test.questions.length;
+      const score = Math.round((correctAnswersCount / totalQuestions) * 100);
+
+      // Prepare answers array with selectedOptionIndex
+      const submissionAnswers = answers.map((selectedOptionIndex, index) => ({
+        questionId: test.questions[index].id,
+        selectedOptionIndex: selectedOptionIndex,
+        correctOptionIndex: test.questions[index].correctOptionIndex
+      }));
+
+      // Submit the solution
       const solution = {
         testId: test.id,
-        answers: answers.map((answer, index) => ({
-          questionId: test.questions[index].id,
-          selectedOptionIndex: answer + 1 // Convert 0-based index back to 1-based
+        score: score,
+        scoreString: `${correctAnswersCount}/${totalQuestions}`,
+        totalQuestions: totalQuestions,
+        correctAnswers: correctAnswersCount,
+        answers: submissionAnswers,
+        questions: test.questions.map(q => ({
+          questionId: q.id,
+          correctOptionIndex: q.correctOptionIndex
         }))
       };
 
-      console.log('Submitting solution with converted indices:', JSON.stringify(solution, null, 2));
+      console.log('Submitting solution:', {
+        correctAnswersCount,
+        totalQuestions,
+        score,
+        scoreString: solution.scoreString,
+        questions: solution.questions
+      });
+
       const response = await api.submitTestSolution(solution);
-      console.log('Submit solution response:', JSON.stringify(response, null, 2));
       
       // Format the ID to ensure it's a valid GUID
       const formattedId = response.id?.toString() || '';
-      console.log('Response ID:', formattedId);
-      // Add dashes if they're missing (8-4-4-4-12 format)
       const guidFormat = formattedId.length === 32 
         ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
         : formattedId;
-      console.log('Formatted GUID:', guidFormat);
       
-      // Show success message and redirect to result page
-      Alert.alert(
-        'Success', 
-        `Test submitted successfully!\n\nScore: ${response.score}\nCorrect Answers: ${response.correctAnswers}/${response.totalQuestions}`,
-        [
-          { 
-            text: 'View Results', 
-            onPress: () => router.push(`/test/result/${guidFormat}`)
-          }
-        ]
-      );
+      // Redirect directly to results page
+      router.push(`/test/result/${guidFormat}`);
     } catch (error) {
       console.error('Error submitting test:', error);
       Alert.alert(
@@ -191,7 +207,7 @@ export default function TakeTestScreen() {
                   ]}
                   onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
                 >
-                  <ThemedText style={styles.optionText}>{option}</ThemedText>
+                  <ThemedText style={styles.optionText}>{option.text}</ThemedText>
                   {answers[questionIndex] === optionIndex && (
                     <Ionicons name="checkmark-circle" size={24} color={tintColor} />
                   )}

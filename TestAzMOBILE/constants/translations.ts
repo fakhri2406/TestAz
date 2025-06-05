@@ -137,5 +137,35 @@ export const translations = {
   emailVerified: 'Email verified successfully! You can now login.',
   verificationFailed: 'Failed to verify code. Please try again.',
 
+  // Test Creation
+  title: 'Başlıq',
+  description: 'Təsvir',
+  answerOptions: 'Cavab seçimləri',
+  option: 'Seçim',
+  addQuestion: 'Sual əlavə et',
+  addedQuestions: 'Əlavə edilmiş suallar',
+  saving: 'Yadda saxlanılır...',
+  createTest: 'Test yarat',
+  testTitle: 'Test başlığı',
+  testDescription: 'Test təsviri',
+  questionText: 'Sual mətni',
+  correctAnswer: 'Düzgün cavab',
+  removeQuestion: 'Sualı sil',
+  addOption: 'Seçim əlavə et',
+  removeOption: 'Seçimi sil',
+  markAsCorrect: 'Düzgün kimi işarələ',
+  unmarkAsCorrect: 'Düzgün işarəsini sil',
+
+  // Test Details
+  deleteTest: 'Testi sil',
+  deleteTestConfirmation: 'Bu testi silmək istədiyinizə əminsiniz?',
+  testDeleted: 'Test uğurla silindi',
+  failedToDeleteTest: 'Test silinərkən xəta baş verdi',
+  testCreated: 'Test uğurla yaradıldı',
+  failedToCreate: 'Test yaradılarkən xəta baş verdi',
+  pleaseEnter: 'Xahiş edirik daxil edin',
+  pleaseFillQuestionsCorrectly: 'Xahiş edirik bütün sualları və cavabları düzgün doldurun',
+  ok: 'Tamam',
+
   // ... existing code ...
 }; 
