@@ -168,6 +168,7 @@ class ApiService {
     isPremium: boolean;
     questions: Array<{
       text: string;
+      correctOptionIndex: number;
       options: Array<{
         text: string;
         isCorrect: boolean;

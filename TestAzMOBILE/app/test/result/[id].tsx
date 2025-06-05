@@ -58,12 +58,13 @@ export default function TestResultDetailScreen() {
     try {
       setLoading(true);
       const resultData = await api.getTestResultDetail(params.id as string);
-      console.log('Raw result data:', JSON.stringify(resultData, null, 2));
+      console.log('=== TEST RESULT DATA ===');
+      console.log('Full result data:', JSON.stringify(resultData, null, 2));
       
       if (resultData.questions) {
-        console.log('Test questions with correctOptionIndex:');
+        console.log('\n=== QUESTIONS ===');
         resultData.questions.forEach((q, i) => {
-          console.log(`Question ${i + 1}:`, {
+          console.log(`\nQuestion ${i + 1}:`, {
             id: q.questionId,
             text: q.questionText,
             correctOptionIndex: q.correctOptionIndex,
@@ -73,13 +74,16 @@ export default function TestResultDetailScreen() {
       }
 
       if (resultData.answers) {
-        console.log('Answers with correctOptionIndex:');
+        console.log('\n=== ANSWERS ===');
         resultData.answers.forEach((a, i) => {
-          console.log(`Answer ${i + 1}:`, {
+          console.log(`\nAnswer ${i + 1}:`, {
             questionId: a.questionId,
             selectedOptionIndex: a.selectedOptionIndex,
             correctOptionIndex: a.correctOptionIndex,
-            isCorrect: a.isCorrect
+            isCorrect: a.isCorrect,
+            options: a.options,
+            selectedOption: a.selectedOption,
+            correctOption: a.correctOption
           });
         });
       }
@@ -152,7 +156,14 @@ export default function TestResultDetailScreen() {
           {result.questions && result.questions.length > 0 ? (
             result.questions.map((question, index) => {
               const answer = result.answers.find(a => a.questionId === question.questionId);
-              console.log('Rendering question:', index + 1, question.questionText);
+              console.log('\n=== RENDERING QUESTION ===');
+              console.log('Question:', {
+                id: question.questionId,
+                text: question.questionText,
+                correctOptionIndex: question.correctOptionIndex,
+                options: question.options
+              });
+              console.log('Answer:', answer);
               return (
                 <ThemedView key={question.questionId} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
                   <ThemedView style={styles.questionHeader}>
@@ -178,39 +189,49 @@ export default function TestResultDetailScreen() {
                   
                   <ThemedView style={styles.optionsContainer}>
                     {question.options.map((option, optionIndex) => {
-                      // Debug log to see the values
+                      const isCorrect = optionIndex === question.correctOptionIndex;
+                      const isSelected = optionIndex === answer?.selectedOptionIndex;
+                      
                       console.log('Rendering option:', {
                         optionIndex,
-                        correctOptionIndex: answer?.correctOptionIndex,
                         option,
-                        isCorrect: optionIndex === 2 // Hardcoded to 2 for now to verify
+                        isCorrect,
+                        isSelected,
+                        correctOptionIndex: question.correctOptionIndex,
+                        selectedOptionIndex: answer?.selectedOptionIndex
                       });
-
-                      const isCorrect = optionIndex === 2; // Hardcoded to 2 since we know it's the correct index
 
                       return (
                         <ThemedView
                           key={optionIndex}
                           style={[
                             styles.optionContainer,
-                            isCorrect ? styles.correctOption : styles.incorrectOption
+                            isCorrect ? styles.correctOption : 
+                            isSelected ? styles.selectedOption : 
+                            styles.incorrectOption
                           ]}
                         >
                           <ThemedView style={styles.optionContent}>
                             <ThemedView style={[
                               styles.optionCircle,
-                              isCorrect ? styles.correctOptionCircle : styles.incorrectOptionCircle
+                              isCorrect ? styles.correctOptionCircle : 
+                              isSelected ? styles.selectedOptionCircle :
+                              styles.incorrectOptionCircle
                             ]}>
                               <ThemedText style={[
                                 styles.optionNumber,
-                                isCorrect ? styles.correctOptionText : styles.incorrectOptionText
+                                isCorrect ? styles.correctOptionText : 
+                                isSelected ? styles.selectedOptionText :
+                                styles.incorrectOptionText
                               ]}>
                                 {String.fromCharCode(65 + optionIndex)}
                               </ThemedText>
                             </ThemedView>
                             <ThemedText style={[
                               styles.optionText,
-                              isCorrect ? styles.correctOptionText : styles.incorrectOptionText
+                              isCorrect ? styles.correctOptionText : 
+                              isSelected ? styles.selectedOptionText :
+                              styles.incorrectOptionText
                             ]}>
                               {option}
                             </ThemedText>
@@ -219,6 +240,8 @@ export default function TestResultDetailScreen() {
                           <ThemedView style={styles.optionIndicator}>
                             {isCorrect ? (
                               <Ionicons name="checkmark-circle" size={24} color="#2E7D32" />
+                            ) : isSelected ? (
+                              <Ionicons name="checkmark-circle" size={24} color="#2196F3" />
                             ) : (
                               <Ionicons name="close-circle" size={24} color="#C62828" />
                             )}
@@ -468,6 +491,17 @@ const styles = StyleSheet.create({
   },
   answerSummaryValue: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedOption: {
+    backgroundColor: '#E3F2FD',
+    borderColor: '#2196F3',
+  },
+  selectedOptionCircle: {
+    backgroundColor: '#2196F3',
+  },
+  selectedOptionText: {
+    color: '#2196F3',
     fontWeight: '600',
   },
 }); 

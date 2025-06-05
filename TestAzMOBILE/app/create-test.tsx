@@ -175,13 +175,20 @@ export default function CreateTest() {
                 title: newTest.title,
                 description: newTest.description,
                 isPremium: newTest.isPremium,
-                questions: newTest.questions.map(q => ({
-                    text: q.text,
-                    options: q.options.map(o => ({
-                        text: o.text,
-                        isCorrect: o.isCorrect
-                    }))
-                }))
+                questions: newTest.questions.map(q => {
+                    // Find the index of the correct option
+                    const correctOptionIndex = q.options.findIndex(opt => opt.isCorrect);
+                    console.log('Question correct option index:', correctOptionIndex);
+
+                    return {
+                        text: q.text,
+                        correctOptionIndex, // Add the correctOptionIndex
+                        options: q.options.map(o => ({
+                            text: o.text,
+                            isCorrect: o.isCorrect
+                        }))
+                    };
+                })
             });
             console.log('Create test response:', response);
             if (response) {
