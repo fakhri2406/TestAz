@@ -226,17 +226,31 @@ class ApiService {
 
   async getTests() {
     try {
-      console.log('Fetching tests...');
-      const response = await this.get('/api/test');
-      console.log('Tests response:', response);
-      return response;
+      console.log('API Service: Fetching tests...');
+      const headers = await this.getHeaders();
+      console.log('API Service: Request headers:', headers);
+      
+      const url = `${this.baseUrl}/api/test`;
+      console.log('API Service: Request URL:', url);
+      
+      const response = await this.axiosInstance.get(url, { headers });
+      console.log('API Service: Response status:', response.status);
+      console.log('API Service: Response data:', JSON.stringify(response.data, null, 2));
+      
+      return response.data;
     } catch (error) {
-      console.error('Error fetching tests:', error);
+      console.error('API Service: Error fetching tests:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
+        console.error('API Service: Axios error details:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
         });
         throw new Error(error.response?.data?.message || error.message);
       }

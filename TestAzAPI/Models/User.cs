@@ -24,6 +24,8 @@ public class User
     
     public bool IsPremium { get; set; }
     
+    public DateTime? PremiumExpirationDate { get; set; }
+    
     public string Role { get; set; } = "User";
     
     public bool IsEmailVerified { get; set; }
@@ -33,4 +35,6 @@ public class User
     public DateTime? VerificationCodeExpiry { get; set; }
     
     public ICollection<UserSolution> Solutions { get; set; } = new List<UserSolution>();
+    
+    public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 }

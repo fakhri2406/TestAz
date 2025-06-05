@@ -36,26 +36,41 @@ export default function TestsScreen() {
 
   const loadTests = async () => {
     try {
+      console.log('Starting to load tests...');
       setLoading(true);
+      console.log('Making API call to get tests...');
       const testsData = await api.getTests();
+      console.log('Received tests data:', JSON.stringify(testsData, null, 2));
+      
       // Ensure we have properly formatted test objects
       const formattedTests = Array.isArray(testsData) 
-        ? testsData.map(test => ({
-            id: test.id || '',
-            title: test.title || '',
-            description: test.description || '',
-            score: typeof test.score === 'number' ? test.score : 0,
-            isPremium: test.isPremium || false
-          }))
+        ? testsData.map(test => {
+            console.log('Processing test:', test);
+            return {
+              id: test.id || '',
+              title: test.title || '',
+              description: test.description || '',
+              score: typeof test.score === 'number' ? test.score : 0,
+              isPremium: test.isPremium || false
+            };
+          })
         : [];
+      console.log('Formatted tests:', JSON.stringify(formattedTests, null, 2));
       setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
       Alert.alert(
         translations.error,
         translations.failedToLoadTests
       );
     } finally {
+      console.log('Finished loading tests');
       setLoading(false);
       setRefreshing(false);
     }

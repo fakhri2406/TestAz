@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
+using TestAzAPI.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,6 +95,11 @@ builder.Services.AddScoped<IVideoCourseRepository, VideoCourseRepository>();
 builder.Services.AddScoped<IUserSolutionRepository, UserSolutionRepository>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Add Kapital Pay configuration
+builder.Services.Configure<KapitalPaySettings>(builder.Configuration.GetSection("KapitalPay"));
+builder.Services.AddHttpClient<IKapitalPayService, KapitalPayService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 var app = builder.Build();
 
