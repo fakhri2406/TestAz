@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
 
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
@@ -40,10 +40,11 @@ export default function LoginScreen() {
     try {
       console.log('Attempting login with email:', email);
       const result = await login(email, password);
-      console.log('Login result:', result);
+      console.log('Login result:', JSON.stringify(result, null, 2));
       
       if (result.success) {
-        console.log('Login successful, navigating to tabs');
+        console.log('Login successful, current user:', JSON.stringify(user, null, 2));
+        console.log('User role:', user?.role);
         router.replace('/(tabs)');
       } else {
         console.log('Login failed:', result.message);

@@ -48,6 +48,38 @@ namespace TestAzAPI.Migrations
                     b.ToTable("AnswerOptions");
                 });
 
+            modelBuilder.Entity("TestAzAPI.Models.PremiumRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProcessedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PremiumRequests");
+                });
+
             modelBuilder.Entity("TestAzAPI.Models.Question", b =>
                 {
                     b.Property<Guid>("Id")
@@ -117,7 +149,7 @@ namespace TestAzAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Subscription");
+                    b.ToTable("Subscriptions");
                 });
 
             modelBuilder.Entity("TestAzAPI.Models.Test", b =>
@@ -252,17 +284,12 @@ namespace TestAzAPI.Migrations
                     b.Property<Guid>("TestId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("TestId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TestId");
-
-                    b.HasIndex("TestId1");
 
                     b.HasIndex("UserId");
 
@@ -314,6 +341,17 @@ namespace TestAzAPI.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("TestAzAPI.Models.PremiumRequest", b =>
+                {
+                    b.HasOne("TestAzAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TestAzAPI.Models.Question", b =>
                 {
                     b.HasOne("TestAzAPI.Models.Test", "Test")
@@ -341,13 +379,13 @@ namespace TestAzAPI.Migrations
                     b.HasOne("TestAzAPI.Models.Question", "Question")
                         .WithMany("UserAnswers")
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TestAzAPI.Models.UserSolution", "UserSolution")
                         .WithMany("Answers")
                         .HasForeignKey("UserSolutionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Question");
@@ -358,14 +396,10 @@ namespace TestAzAPI.Migrations
             modelBuilder.Entity("TestAzAPI.Models.UserSolution", b =>
                 {
                     b.HasOne("TestAzAPI.Models.Test", "Test")
-                        .WithMany()
+                        .WithMany("UserSolutions")
                         .HasForeignKey("TestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("TestAzAPI.Models.Test", null)
-                        .WithMany("UserSolutions")
-                        .HasForeignKey("TestId1");
 
                     b.HasOne("TestAzAPI.Models.User", "User")
                         .WithMany("Solutions")

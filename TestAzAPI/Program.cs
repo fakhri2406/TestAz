@@ -101,6 +101,8 @@ builder.Services.Configure<KapitalPaySettings>(builder.Configuration.GetSection(
 builder.Services.AddHttpClient<IKapitalPayService, KapitalPayService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
+builder.Services.AddScoped<IPremiumRequestRepository, PremiumRequestRepository>();
+
 var app = builder.Build();
 
 // Apply database migrations

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using TestAzAPI.Models;
 using TestAzAPI.Models.Dtos;
 using TestAzAPI.Repositories.Base;
@@ -153,6 +154,22 @@ public class AuthController : ControllerBase
             user.Role,
             user.IsPremium
         });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _userRepo.GetAllAsync();
+        return Ok(users.Select(u => new
+        {
+            u.Id,
+            u.Email,
+            u.Name,
+            u.Surname,
+            u.Role,
+            u.IsPremium
+        }));
     }
 }
 

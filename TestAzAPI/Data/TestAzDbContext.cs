@@ -15,6 +15,7 @@ public class TestAzDbContext : DbContext
     public DbSet<UserAnswer> UserAnswers { get; set; }
     public DbSet<VideoCourse> VideoCourses { get; set; }
     public DbSet<Subscription> Subscriptions { get; set; }
+    public DbSet<PremiumRequest> PremiumRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,46 +36,44 @@ public class TestAzDbContext : DbContext
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // UserSolution -> User (default cascade is fine)
+        // Configure UserSolution entity
         modelBuilder.Entity<UserSolution>()
             .HasOne(us => us.User)
             .WithMany(u => u.Solutions)
             .HasForeignKey(us => us.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Question -> Test (default cascade is fine)
+        modelBuilder.Entity<UserSolution>()
+            .HasOne(us => us.Test)
+            .WithMany(t => t.UserSolutions)
+            .HasForeignKey(us => us.TestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure Question entity
         modelBuilder.Entity<Question>()
             .HasOne(q => q.Test)
             .WithMany(t => t.Questions)
             .HasForeignKey(q => q.TestId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // AnswerOption -> Question (default cascade is fine)
-        modelBuilder.Entity<AnswerOption>()
-            .HasOne(ao => ao.Question)
-            .WithMany(q => q.Options)
-            .HasForeignKey(ao => ao.QuestionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // UserAnswer -> UserSolution (disable cascade to avoid multiple cascade paths)
+        // Configure UserAnswer entity
         modelBuilder.Entity<UserAnswer>()
             .HasOne(ua => ua.UserSolution)
             .WithMany(us => us.Answers)
             .HasForeignKey(ua => ua.UserSolutionId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // UserAnswer -> Question (disable cascade to avoid multiple cascade paths)
         modelBuilder.Entity<UserAnswer>()
             .HasOne(ua => ua.Question)
             .WithMany(q => q.UserAnswers)
             .HasForeignKey(ua => ua.QuestionId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // UserSolution -> Test (default cascade is fine)
-        modelBuilder.Entity<UserSolution>()
-            .HasOne(us => us.Test)
-            .WithMany()
-            .HasForeignKey(us => us.TestId)
+        // Configure AnswerOption entity
+        modelBuilder.Entity<AnswerOption>()
+            .HasOne(ao => ao.Question)
+            .WithMany(q => q.Options)
+            .HasForeignKey(ao => ao.QuestionId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Test>()

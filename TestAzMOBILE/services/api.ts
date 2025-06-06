@@ -122,6 +122,26 @@ interface User {
   isPremium: boolean;
 }
 
+interface UpgradeRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+interface PremiumRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: string;
+  createdAt: string;
+  processedAt?: string;
+  processedBy?: string;
+  rejectionReason?: string;
+}
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
@@ -349,5 +369,66 @@ export const api = {
       console.error('Upgrade to premium error:', error);
       throw error;
     }
-  }
+  },
+
+  requestPremiumUpgrade: async () => {
+    try {
+      const response = await apiService.requestPremiumUpgrade();
+      return response;
+    } catch (error) {
+      console.error('Request premium upgrade error:', error);
+      throw error;
+    }
+  },
+
+  getUpgradeRequests: async (): Promise<UpgradeRequest[]> => {
+    try {
+      const response = await apiService.getUpgradeRequests();
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Get upgrade requests error:', error);
+      throw error;
+    }
+  },
+
+  approveUpgradeRequest: async (requestId: string): Promise<void> => {
+    try {
+      await apiService.approveUpgradeRequest(requestId);
+    } catch (error) {
+      console.error('Approve upgrade request error:', error);
+      throw error;
+    }
+  },
+
+  rejectUpgradeRequest: async (requestId: string): Promise<void> => {
+    try {
+      await apiService.rejectUpgradeRequest(requestId);
+    } catch (error) {
+      console.error('Reject upgrade request error:', error);
+      throw error;
+    }
+  },
+
+  getPremiumRequests: async (): Promise<PremiumRequest[]> => {
+    try {
+      const response = await apiService.getPremiumRequests();
+      return response;
+    } catch (error) {
+      console.error('Get premium requests error:', error);
+      throw error;
+    }
+  },
+
+  handlePremiumRequest: async (requestId: string, approve: boolean): Promise<void> => {
+    try {
+      if (approve) {
+        await apiService.approvePremiumRequest(requestId);
+      } else {
+        await apiService.rejectPremiumRequest(requestId, 'Rejected by admin');
+      }
+    } catch (error) {
+      console.error('Handle premium request error:', error);
+      throw error;
+    }
+  },
 }; 
