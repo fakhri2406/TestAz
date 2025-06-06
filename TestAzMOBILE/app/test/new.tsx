@@ -195,7 +195,7 @@ export default function NewTestScreen() {
                 style={styles.removeButton}
                 onPress={() => removeQuestion(qIndex)}
               >
-                <ThemedText style={styles.removeButtonText}>{translations.remove}</ThemedText>
+                <ThemedText style={styles.removeButtonText}>{translations.removeQuestion}</ThemedText>
               </TouchableOpacity>
             </ThemedView>
           ))}
