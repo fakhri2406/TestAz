@@ -36,26 +36,41 @@ export default function TestsScreen() {
 
   const loadTests = async () => {
     try {
+      console.log('Starting to load tests...');
       setLoading(true);
+      console.log('Making API call to get tests...');
       const testsData = await api.getTests();
+      console.log('Received tests data:', JSON.stringify(testsData, null, 2));
+      
       // Ensure we have properly formatted test objects
       const formattedTests = Array.isArray(testsData) 
-        ? testsData.map(test => ({
-            id: test.id || '',
-            title: test.title || '',
-            description: test.description || '',
-            score: typeof test.score === 'number' ? test.score : 0,
-            isPremium: test.isPremium || false
-          }))
+        ? testsData.map(test => {
+            console.log('Processing test:', test);
+            return {
+              id: test.id || '',
+              title: test.title || '',
+              description: test.description || '',
+              score: typeof test.score === 'number' ? test.score : 0,
+              isPremium: test.isPremium || false
+            };
+          })
         : [];
+      console.log('Formatted tests:', JSON.stringify(formattedTests, null, 2));
       setTests(formattedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
       Alert.alert(
         translations.error,
         translations.failedToLoadTests
       );
     } finally {
+      console.log('Finished loading tests');
       setLoading(false);
       setRefreshing(false);
     }
@@ -68,11 +83,15 @@ export default function TestsScreen() {
 
   const checkUserStatus = async () => {
     try {
+      console.log('Checking user status...');
       const currentUser = await api.getCurrentUser();
+      console.log('Current user:', currentUser);
       if (currentUser?.id) {
         const userData = await api.getUserById(currentUser.id);
+        console.log('User data:', userData);
         setIsAdmin(userData.role === 'Admin');
         setIsPremium(userData.isPremium || false);
+        console.log('User status set - isAdmin:', userData.role === 'Admin', 'isPremium:', userData.isPremium);
       }
     } catch (error) {
       console.error('Error checking user status:', error);
@@ -132,15 +151,66 @@ export default function TestsScreen() {
     );
   };
 
-  const filteredTests = tests.filter(test => {
-    if (showPremiumOnly) {
-      return test.isPremium;
+  const renderTestItem = ({ item }: { item: Test }) => {
+    // Skip rendering premium tests for non-premium, non-admin users
+    if (!isAdmin && !isPremium && item.isPremium) {
+      return (
+        <TouchableOpacity
+          style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
+          onPress={() => router.push('/premium')}
+        >
+          <ThemedView style={styles.testHeader}>
+            <ThemedView style={styles.titleContainer}>
+              <ThemedText style={styles.testTitle}>
+                {item.title}
+                <TouchableOpacity
+                  style={styles.lockButton}
+                  onPress={() => router.push('/premium')}
+                >
+                  <Ionicons 
+                    name="lock-closed" 
+                    size={20} 
+                    color={tintColor} 
+                  />
+                </TouchableOpacity>
+              </ThemedText>
+            </ThemedView>
+          </ThemedView>
+          <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+        </TouchableOpacity>
+      );
     }
-    if (!isPremium) {
-      return !test.isPremium;
-    }
-    return true;
-  });
+
+    // Render all other tests normally
+    return (
+      <TouchableOpacity
+        style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
+        onPress={() => handleTestPress(item)}
+      >
+        <ThemedView style={styles.testHeader}>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText style={styles.testTitle}>
+              {item.title}
+              {item.isPremium && (
+                isAdmin || isPremium ? (
+                  <ThemedText style={[styles.premiumStar, { color: tintColor }]}> ★</ThemedText>
+                ) : null
+              )}
+            </ThemedText>
+          </ThemedView>
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteTest(item.id)}
+            >
+              <Ionicons name="trash-outline" size={20} color="#dc3545" />
+            </TouchableOpacity>
+          )}
+        </ThemedView>
+        <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -218,41 +288,9 @@ export default function TestsScreen() {
           </ThemedView>
 
           <FlatList
-            data={filteredTests}
+            data={tests}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.testCard, { backgroundColor: cardBackgroundColor }]}
-                onPress={() => handleTestPress(item)}
-              >
-                <ThemedView style={styles.testHeader}>
-                  <ThemedView style={styles.titleContainer}>
-                    <ThemedText style={styles.testTitle}>{item.title}</ThemedText>
-                    {item.isPremium && (
-                      <TouchableOpacity
-                        style={styles.lockButton}
-                        onPress={() => router.push('/premium')}
-                      >
-                        <Ionicons 
-                          name="lock-closed" 
-                          size={20} 
-                          color={item.isPremium && !isPremium ? tintColor : textColor} 
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </ThemedView>
-                  {isAdmin && (
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDeleteTest(item.id)}
-                    >
-                      <Ionicons name="trash-outline" size={20} color="#dc3545" />
-                    </TouchableOpacity>
-                  )}
-                </ThemedView>
-                <ThemedText style={styles.testDescription}>{item.description}</ThemedText>
-              </TouchableOpacity>
-            )}
+            renderItem={renderTestItem}
             contentContainerStyle={styles.list}
             refreshControl={
               <RefreshControl
@@ -401,5 +439,10 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  premiumStar: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 }); 

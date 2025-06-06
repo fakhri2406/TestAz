@@ -14,6 +14,7 @@ public class TestAzDbContext : DbContext
     public DbSet<UserSolution> UserSolutions { get; set; }
     public DbSet<UserAnswer> UserAnswers { get; set; }
     public DbSet<VideoCourse> VideoCourses { get; set; }
+    public DbSet<Subscription> Subscriptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,13 @@ public class TestAzDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.Id)
             .ValueGeneratedOnAdd();
+
+        // Configure Subscription entity
+        modelBuilder.Entity<Subscription>()
+            .HasOne(s => s.User)
+            .WithMany(u => u.Subscriptions)
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // UserSolution -> User (default cascade is fine)
         modelBuilder.Entity<UserSolution>()
