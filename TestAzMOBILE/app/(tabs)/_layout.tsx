@@ -5,15 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 import { useAuth } from '@/context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { jwtDecode } from 'jwt-decode';
-
-interface DecodedToken {
-  email: string;
-  role: string;
-  id: string;
-  exp: number;
-}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -22,28 +13,8 @@ export default function TabLayout() {
   const tabIconDefault = useThemeColor({}, 'tabIconDefault');
   const tabIconSelected = useThemeColor({}, 'tabIconSelected');
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
-          const decoded = jwtDecode<DecodedToken>(token);
-          console.log('Decoded token:', decoded);
-          setIsAdmin(decoded.role === 'Admin');
-        } else {
-          console.log('No token found');
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('Error decoding token:', error);
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, []);
+  const isAdmin = user?.role === 'Admin';
 
   return (
     <Tabs
@@ -89,6 +60,28 @@ export default function TabLayout() {
           ),
         }}
       />
+      {isAdmin && (
+        <>
+          <Tabs.Screen
+            name="users"
+            options={{
+              title: 'Users',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="people" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="requests"
+            options={{
+              title: 'Requests',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="notifications" size={size} color={color} />
+              ),
+            }}
+          />
+        </>
+      )}
       <Tabs.Screen
         name="profile"
         options={{

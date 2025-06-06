@@ -486,6 +486,87 @@ class ApiService {
       throw error;
     }
   }
+
+  async requestPremiumUpgrade() {
+    try {
+      const headers = await this.getHeaders();
+      const response = await this.post('/api/premium/request', {});
+      return response;
+    } catch (error) {
+      console.error('Error requesting premium upgrade:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async getUpgradeRequests() {
+    try {
+      const headers = await this.getHeaders();
+      const response = await this.get('/api/premium/requests');
+      return response;
+    } catch (error) {
+      console.error('Error getting upgrade requests:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async approveUpgradeRequest(requestId: string) {
+    try {
+      const headers = await this.getHeaders();
+      const response = await this.post(`/api/premium/requests/${requestId}/approve`, {});
+      return response;
+    } catch (error) {
+      console.error('Error approving upgrade request:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async rejectUpgradeRequest(requestId: string) {
+    try {
+      const headers = await this.getHeaders();
+      const response = await this.post(`/api/premium/requests/${requestId}/reject`, {});
+      return response;
+    } catch (error) {
+      console.error('Error rejecting upgrade request:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async getAllUsers() {
+    try {
+      console.log('Getting all users');
+      const response = await this.get('/api/auth/users');
+      console.log('Users response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers
+          }
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
 }
 
 export const apiService = new ApiService(); 

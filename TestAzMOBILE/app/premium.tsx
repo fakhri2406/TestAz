@@ -18,15 +18,15 @@ export default function PremiumScreen() {
   const handleUpgrade = async () => {
     try {
       setLoading(true);
-      await api.upgradeToPremium();
+      await api.requestPremiumUpgrade();
       Alert.alert(
-        'Success',
-        'Your account has been upgraded to premium!',
+        'Request Sent',
+        'Your premium upgrade request has been sent to the administrator. You will be notified once it is reviewed.',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error) {
-      console.error('Error upgrading to premium:', error);
-      Alert.alert('Error', 'Failed to upgrade to premium. Please try again.');
+      console.error('Error requesting premium upgrade:', error);
+      Alert.alert('Error', 'Failed to send upgrade request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function PremiumScreen() {
             disabled={loading}
           >
             <ThemedText style={[styles.upgradeButtonText, { color: backgroundColor }]}>
-              {loading ? 'Processing...' : 'Upgrade Now'}
+              {loading ? 'Sending Request...' : 'Request Premium Upgrade'}
             </ThemedText>
           </TouchableOpacity>
         </ScrollView>
