@@ -130,6 +130,18 @@ interface UpgradeRequest {
   createdAt: string;
 }
 
+interface PremiumRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: string;
+  createdAt: string;
+  processedAt?: string;
+  processedBy?: string;
+  rejectionReason?: string;
+}
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
@@ -393,6 +405,29 @@ export const api = {
       await apiService.rejectUpgradeRequest(requestId);
     } catch (error) {
       console.error('Reject upgrade request error:', error);
+      throw error;
+    }
+  },
+
+  getPremiumRequests: async (): Promise<PremiumRequest[]> => {
+    try {
+      const response = await apiService.getPremiumRequests();
+      return response;
+    } catch (error) {
+      console.error('Get premium requests error:', error);
+      throw error;
+    }
+  },
+
+  handlePremiumRequest: async (requestId: string, approve: boolean): Promise<void> => {
+    try {
+      if (approve) {
+        await apiService.approvePremiumRequest(requestId);
+      } else {
+        await apiService.rejectPremiumRequest(requestId, 'Rejected by admin');
+      }
+    } catch (error) {
+      console.error('Handle premium request error:', error);
       throw error;
     }
   },

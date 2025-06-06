@@ -6,6 +6,8 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
+import { router } from 'expo-router';
 
 interface User {
   id: string;
@@ -17,6 +19,7 @@ interface User {
 }
 
 export default function UsersScreen() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -39,8 +42,12 @@ export default function UsersScreen() {
   };
 
   useEffect(() => {
+    if (user?.role !== 'Admin') {
+      router.replace('/');
+      return;
+    }
     fetchUsers();
-  }, []);
+  }, [user]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {

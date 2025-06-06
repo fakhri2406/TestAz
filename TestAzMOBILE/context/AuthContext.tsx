@@ -93,13 +93,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('AuthContext: Starting login process');
       const response = await api.login({ email, password });
+      console.log('AuthContext: Login response:', JSON.stringify(response, null, 2));
       
       if (!response.token || !response.user) {
+        console.log('AuthContext: Login failed - missing token or user data');
         return { success: false, message: response.message || translations.loginFailed };
       }
 
       // Store token and user data
+      console.log('AuthContext: Storing user data:', JSON.stringify(response.user, null, 2));
       await AsyncStorage.setItem('token', response.token);
       await AsyncStorage.setItem('user', JSON.stringify(response.user));
       
@@ -107,9 +111,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(response.user);
       setIsAuthenticated(true);
       
+      console.log('AuthContext: Login successful, user set to:', JSON.stringify(response.user, null, 2));
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('AuthContext: Login error:', error);
       return { 
         success: false, 
         message: error instanceof Error ? error.message : translations.loginFailed 

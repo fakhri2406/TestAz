@@ -6,6 +6,8 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { api } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
+import { router } from 'expo-router';
 
 interface Request {
   id: string;
@@ -17,6 +19,7 @@ interface Request {
 }
 
 export default function RequestsScreen() {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const tintColor = useThemeColor({}, 'tint');
@@ -37,8 +40,12 @@ export default function RequestsScreen() {
   };
 
   useEffect(() => {
+    if (user?.role !== 'Admin') {
+      router.replace('/');
+      return;
+    }
     fetchRequests();
-  }, []);
+  }, [user]);
 
   const handleRequest = async (requestId: string, approve: boolean) => {
     try {

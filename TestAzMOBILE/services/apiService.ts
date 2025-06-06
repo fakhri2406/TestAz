@@ -585,31 +585,48 @@ class ApiService {
     console.log("Response body:", errorText);
 
     if (response.status === 400 && (errorText.includes("already have a pending premium request"))) {
-      // (Do not re-throw (or log an error) so that the caller (for example, handleRequestPremium in premium.tsx) can treat it as a warning (using Alert.alert) and not an error.)
       return;
     } else if (!response.ok) {
-      console.error("Error submitting premium request (other than 400):", errorText);
+      console.error("Error submitting premium request:", errorText);
       throw new Error(errorText);
     }
   }
 
   async getPremiumRequests(): Promise<PremiumRequest[]> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/premium-requests`, {
-      headers: {
-        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`,
-      },
-    });
+    const url = `${API_CONFIG.BASE_URL}/api/PremiumRequest/requests`;
+    console.log("Fetching premium requests from:", url);
+    
+    try {
+      const token = await AsyncStorage.getItem('token');
+      console.log("Using token:", token ? "Token exists" : "No token found");
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
+      console.log("Response status:", response.status);
+      const responseText = await response.text();
+      console.log("Response body:", responseText);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+      }
+
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error("Detailed error in getPremiumRequests:", {
+        error,
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw error;
     }
-
-    return response.json();
   }
 
   async approvePremiumRequest(requestId: string): Promise<void> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/PremiumRequest/${requestId}/approve`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/PremiumRequest/${requestId}/approve`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`,
@@ -624,7 +641,7 @@ class ApiService {
   }
 
   async rejectPremiumRequest(requestId: string, reason: string): Promise<void> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/PremiumRequest/${requestId}/reject`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/PremiumRequest/${requestId}/reject`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`,
