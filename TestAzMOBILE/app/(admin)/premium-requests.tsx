@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { translations } from '@/constants/translations';
 
 export default function PremiumRequestsScreen() {
     const [requests, setRequests] = useState<PremiumRequest[]>([]);
@@ -26,7 +27,7 @@ export default function PremiumRequestsScreen() {
             const data = await apiService.getPremiumRequests();
             setRequests(data);
         } catch (error) {
-            Alert.alert('Error', 'Failed to fetch premium requests');
+            Alert.alert(translations.error, translations.failedToFetchRequests);
         } finally {
             setLoading(false);
         }
@@ -35,27 +36,27 @@ export default function PremiumRequestsScreen() {
     const handleApprove = async (requestId: string) => {
         try {
             await apiService.approvePremiumRequest(requestId);
-            Alert.alert('Success', 'Premium request approved successfully');
+            Alert.alert(translations.success, translations.requestApproved);
             setShowModal(false);
             fetchRequests();
         } catch (error) {
-            Alert.alert('Error', 'Failed to approve request');
+            Alert.alert(translations.error, translations.failedToApproveRequest);
         }
     };
 
     const handleReject = async (requestId: string, reason: string) => {
         if (!reason.trim()) {
-            Alert.alert('Error', 'Please provide a reason for rejection');
+            Alert.alert(translations.error, translations.provideRejectReason);
             return;
         }
 
         try {
             await apiService.rejectPremiumRequest(requestId, reason);
-            Alert.alert('Success', 'Premium request rejected successfully');
+            Alert.alert(translations.success, translations.requestRejected);
             setShowModal(false);
             fetchRequests();
         } catch (error) {
-            Alert.alert('Error', 'Failed to reject request');
+            Alert.alert(translations.error, translations.failedToRejectRequest);
         }
     };
 
@@ -70,15 +71,15 @@ export default function PremiumRequestsScreen() {
     return (
         <View style={styles.container}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={styles.title}>Premium Requests</Text>
+                <Text style={styles.title}>{translations.premiumRequestTitle}</Text>
                 <TouchableOpacity onPress={() => router.replace('/')} style={{ padding: 8, backgroundColor: '#e0e0e0', borderRadius: 4 }}>
-                    <Text>Return to Main</Text>
+                    <Text>{translations.returnToMain}</Text>
                 </TouchableOpacity>
             </View>
             {requests.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Ionicons name="checkmark-circle-outline" size={48} color="#666" />
-                    <Text style={styles.emptyText}>No pending premium requests</Text>
+                    <Text style={styles.emptyText}>{translations.noPendingRequests}</Text>
                 </View>
             ) : (
                 <ScrollView style={styles.scrollView}>
@@ -97,10 +98,10 @@ export default function PremiumRequestsScreen() {
                             </View>
                             <View style={styles.requestDetails}>
                                 <Text style={styles.date}>
-                                    Requested on: {format(new Date(request.createdAt), 'MMM d, yyyy')}
+                                    {translations.requestedOn} {format(new Date(request.createdAt), 'MMM d, yyyy')}
                                 </Text>
                                 <View style={[styles.statusBadge, { backgroundColor: '#FFA500' }]}>
-                                    <Text style={styles.statusText}>Pending</Text>
+                                    <Text style={styles.statusText}>{translations.pending}</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -111,13 +112,13 @@ export default function PremiumRequestsScreen() {
             {showModal && selectedRequest && (
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Premium Request</Text>
+                        <Text style={styles.modalTitle}>{translations.premiumRequest}</Text>
                         <View style={styles.modalInfo}>
-                            <Text style={styles.modalLabel}>User:</Text>
+                            <Text style={styles.modalLabel}>{translations.user}:</Text>
                             <Text style={styles.modalValue}>{selectedRequest.userName}</Text>
-                            <Text style={styles.modalLabel}>Email:</Text>
+                            <Text style={styles.modalLabel}>{translations.email}:</Text>
                             <Text style={styles.modalValue}>{selectedRequest.userEmail}</Text>
-                            <Text style={styles.modalLabel}>Requested on:</Text>
+                            <Text style={styles.modalLabel}>{translations.requestedDate}:</Text>
                             <Text style={styles.modalValue}>
                                 {format(new Date(selectedRequest.createdAt), 'MMM d, yyyy')}
                             </Text>
@@ -127,21 +128,21 @@ export default function PremiumRequestsScreen() {
                                 style={[styles.modalButton, styles.approveButton]}
                                 onPress={() => handleApprove(selectedRequest.id)}
                             >
-                                <Text style={styles.buttonText}>Approve</Text>
+                                <Text style={styles.buttonText}>{translations.approve}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.rejectButton]}
                                 onPress={() => {
                                     Alert.prompt(
-                                        'Reject Request',
-                                        'Please provide a reason for rejection:',
+                                        translations.rejectRequest,
+                                        translations.provideRejectReason,
                                         [
                                             {
-                                                text: 'Cancel',
+                                                text: translations.cancel,
                                                 style: 'cancel',
                                             },
                                             {
-                                                text: 'Reject',
+                                                text: translations.reject,
                                                 onPress: (reason) => {
                                                     if (reason) {
                                                         handleReject(selectedRequest.id, reason);
@@ -153,14 +154,14 @@ export default function PremiumRequestsScreen() {
                                     );
                                 }}
                             >
-                                <Text style={styles.buttonText}>Reject</Text>
+                                <Text style={styles.buttonText}>{translations.reject}</Text>
                             </TouchableOpacity>
                         </View>
                         <TouchableOpacity
                             style={styles.closeButton}
                             onPress={() => setShowModal(false)}
                         >
-                            <Text style={styles.closeButtonText}>Close</Text>
+                            <Text style={styles.closeButtonText}>{translations.close}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

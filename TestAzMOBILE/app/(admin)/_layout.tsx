@@ -1,8 +1,10 @@
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
+import { translations } from '@/constants/translations';
 
 export default function AdminLayout() {
     const { user } = useAuth();
@@ -59,7 +61,7 @@ export default function AdminLayout() {
                     <Tabs.Screen
                         name="premium-requests"
                         options={{
-                            title: 'Premium Requests',
+                            title: translations.premiumRequests,
                             tabBarIcon: ({ color, size }) => (
                                 <Ionicons name="star" size={size} color={color} />
                             ),
