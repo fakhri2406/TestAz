@@ -5,15 +5,27 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { router } from 'expo-router';
 
 export default function ParametersScreen() {
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'icon');
+  const cardBackgroundColor = useThemeColor({}, 'card');
 
   return (
     <ThemedView style={styles.container}>
+      <TouchableOpacity
+        style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+        onPress={() => router.push('/(tabs)/profile')}
+      >
+        <Ionicons name="home" size={24} color={tintColor} />
+        <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
+          {translations.returnToMain}
+        </ThemedText>
+      </TouchableOpacity>
+
       <ThemedView style={styles.section}>
         <ThemedText type="title" style={styles.sectionTitle}>
           {translations.settings}
@@ -103,5 +115,14 @@ const styles = StyleSheet.create({
   menuValue: {
     fontSize: 16,
     opacity: 0.7,
+  },
+  returnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  returnButtonText: {
+    fontSize: 16,
+    marginLeft: 10,
   },
 }); 
