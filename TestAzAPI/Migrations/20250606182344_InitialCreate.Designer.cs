@@ -12,8 +12,8 @@ using TestAzAPI.Data;
 namespace TestAzAPI.Migrations
 {
     [DbContext(typeof(TestAzDbContext))]
-    [Migration("20250604091338_UpdateVerificationToCode")]
-    partial class UpdateVerificationToCode
+    [Migration("20250606182344_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -51,14 +51,43 @@ namespace TestAzAPI.Migrations
                     b.ToTable("AnswerOptions");
                 });
 
-            modelBuilder.Entity("TestAzAPI.Models.Question", b =>
+            modelBuilder.Entity("TestAzAPI.Models.PremiumRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CorrectAnswer")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProcessedBy")
                         .HasColumnType("text");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PremiumRequests");
+                });
+
+            modelBuilder.Entity("TestAzAPI.Models.Question", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Points")
                         .HasColumnType("integer");
@@ -78,6 +107,52 @@ namespace TestAzAPI.Migrations
                     b.HasIndex("TestId");
 
                     b.ToTable("Questions");
+                });
+
+            modelBuilder.Entity("TestAzAPI.Models.Subscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentError")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Subscriptions");
                 });
 
             modelBuilder.Entity("TestAzAPI.Models.Test", b =>
@@ -137,6 +212,9 @@ namespace TestAzAPI.Migrations
                     b.Property<byte[]>("PasswordSalt")
                         .IsRequired()
                         .HasColumnType("bytea");
+
+                    b.Property<DateTime?>("PremiumExpirationDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -209,17 +287,12 @@ namespace TestAzAPI.Migrations
                     b.Property<Guid>("TestId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("TestId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TestId");
-
-                    b.HasIndex("TestId1");
 
                     b.HasIndex("UserId");
 
@@ -271,6 +344,17 @@ namespace TestAzAPI.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("TestAzAPI.Models.PremiumRequest", b =>
+                {
+                    b.HasOne("TestAzAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TestAzAPI.Models.Question", b =>
                 {
                     b.HasOne("TestAzAPI.Models.Test", "Test")
@@ -282,18 +366,29 @@ namespace TestAzAPI.Migrations
                     b.Navigation("Test");
                 });
 
+            modelBuilder.Entity("TestAzAPI.Models.Subscription", b =>
+                {
+                    b.HasOne("TestAzAPI.Models.User", "User")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TestAzAPI.Models.UserAnswer", b =>
                 {
                     b.HasOne("TestAzAPI.Models.Question", "Question")
                         .WithMany("UserAnswers")
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TestAzAPI.Models.UserSolution", "UserSolution")
                         .WithMany("Answers")
                         .HasForeignKey("UserSolutionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Question");
@@ -304,14 +399,10 @@ namespace TestAzAPI.Migrations
             modelBuilder.Entity("TestAzAPI.Models.UserSolution", b =>
                 {
                     b.HasOne("TestAzAPI.Models.Test", "Test")
-                        .WithMany()
+                        .WithMany("UserSolutions")
                         .HasForeignKey("TestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("TestAzAPI.Models.Test", null)
-                        .WithMany("UserSolutions")
-                        .HasForeignKey("TestId1");
 
                     b.HasOne("TestAzAPI.Models.User", "User")
                         .WithMany("Solutions")
@@ -341,6 +432,8 @@ namespace TestAzAPI.Migrations
             modelBuilder.Entity("TestAzAPI.Models.User", b =>
                 {
                     b.Navigation("Solutions");
+
+                    b.Navigation("Subscriptions");
                 });
 
             modelBuilder.Entity("TestAzAPI.Models.UserSolution", b =>

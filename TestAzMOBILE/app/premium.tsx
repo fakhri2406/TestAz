@@ -1,156 +1,209 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/apiService';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { api } from '@/services/api';
+import { format } from 'date-fns';
 
 export default function PremiumScreen() {
-  const [loading, setLoading] = useState(false);
+    const { user, refreshUser } = useAuth();
+    const [loading, setLoading] = useState(false);
 
-  const tintColor = useThemeColor({}, 'tint');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBackgroundColor = useThemeColor({}, 'card');
+    const handleRequestPremium = async () => {
+        if (!user) return;
 
-  const handleUpgrade = async () => {
-    try {
-      setLoading(true);
-      await api.requestPremiumUpgrade();
-      Alert.alert(
-        'Request Sent',
-        'Your premium upgrade request has been sent to the administrator. You will be notified once it is reviewed.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
-    } catch (error) {
-      console.error('Error requesting premium upgrade:', error);
-      Alert.alert('Error', 'Failed to send upgrade request. Please try again.');
-    } finally {
-      setLoading(false);
+        if (user.isPremium) {
+            Alert.alert('Already Premium', 'You are already a premium user!');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await apiService.createPremiumRequest();
+            Alert.alert(
+                'Request Submitted',
+                'Your premium request has been submitted successfully. An admin will review your request soon.',
+                [{ text: 'OK', onPress: refreshUser }]
+            );
+        } catch (error: any) {
+            if (error.message && (error.message.includes("already have a pending premium request") || (error.response && error.response.status === 400))) {
+                Alert.alert("Warning", "You already have a pending premium request (or a similar warning).");
+            } else {
+                Alert.alert("Error", (error.message || "Failed to submit premium request"));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!user) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>Please log in to access premium features</Text>
+            </View>
+        );
     }
-  };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        <TouchableOpacity
-          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={tintColor} />
-          <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
-            Back
-          </ThemedText>
-        </TouchableOpacity>
+    return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <Ionicons
+                    name={user.isPremium ? 'star' : 'star-outline'}
+                    size={48}
+                    color={user.isPremium ? '#FFD700' : '#666'}
+                />
+                <Text style={styles.title}>
+                    {user.isPremium ? 'Premium Member' : 'Upgrade to Premium'}
+                </Text>
+            </View>
 
-        <ScrollView style={styles.scrollView}>
-          <ThemedView style={[styles.header, { backgroundColor: cardBackgroundColor }]}>
-            <Ionicons name="star" size={48} color={tintColor} />
-            <ThemedText style={styles.title}>Upgrade to Premium</ThemedText>
-            <ThemedText style={styles.subtitle}>Get access to premium tests</ThemedText>
-          </ThemedView>
-
-          <ThemedView style={[styles.featuresCard, { backgroundColor: cardBackgroundColor }]}>
-            <ThemedText style={styles.featuresTitle}>Premium Features</ThemedText>
-            
-            <ThemedView style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={24} color={tintColor} />
-              <ThemedText style={styles.featureText}>Access to all premium tests</ThemedText>
-            </ThemedView>
-
-            <ThemedView style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={24} color={tintColor} />
-              <ThemedText style={styles.featureText}>Detailed test analytics</ThemedText>
-            </ThemedView>
-
-            <ThemedView style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={24} color={tintColor} />
-              <ThemedText style={styles.featureText}>Priority support</ThemedText>
-            </ThemedView>
-          </ThemedView>
-
-          <TouchableOpacity
-            style={[styles.upgradeButton, { backgroundColor: tintColor }]}
-            onPress={handleUpgrade}
-            disabled={loading}
-          >
-            <ThemedText style={[styles.upgradeButtonText, { color: backgroundColor }]}>
-              {loading ? 'Sending Request...' : 'Request Premium Upgrade'}
-            </ThemedText>
-          </TouchableOpacity>
-        </ScrollView>
-      </ThemedView>
-    </SafeAreaView>
-  );
+            {user.isPremium ? (
+                <View style={styles.premiumInfo}>
+                    <Text style={styles.premiumText}>
+                        You are enjoying premium benefits until{' '}
+                        {user.premiumExpirationDate
+                            ? format(new Date(user.premiumExpirationDate), 'MMMM d, yyyy')
+                            : 'indefinitely'}
+                    </Text>
+                    <View style={styles.benefitsContainer}>
+                        <Text style={styles.benefitsTitle}>Premium Benefits:</Text>
+                        <View style={styles.benefitItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                            <Text style={styles.benefitText}>Unlimited access to all features</Text>
+                        </View>
+                        <View style={styles.benefitItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                            <Text style={styles.benefitText}>Priority support</Text>
+                        </View>
+                        <View style={styles.benefitItem}>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                            <Text style={styles.benefitText}>Exclusive content</Text>
+                        </View>
+                    </View>
+                </View>
+            ) : (
+                <View style={styles.upgradeContainer}>
+                    <Text style={styles.upgradeText}>
+                        Get access to all premium features and exclusive content
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.upgradeButton}
+                        onPress={handleRequestPremium}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <>
+                                <Ionicons name="star" size={20} color="white" style={styles.buttonIcon} />
+                                <Text style={styles.buttonText}>Request Premium Access</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                    <Text style={styles.noteText}>
+                        Your request will be reviewed by an administrator
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  returnButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  returnButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    alignItems: 'center',
-    padding: 24,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  featuresCard: {
-    padding: 24,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  featuresTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureText: {
-    fontSize: 16,
-    marginLeft: 12,
-  },
-  upgradeButton: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  upgradeButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+        padding: 20,
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        marginTop: 16,
+    },
+    premiumInfo: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    premiumText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    benefitsContainer: {
+        marginTop: 16,
+    },
+    benefitsTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 12,
+    },
+    benefitItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    benefitText: {
+        fontSize: 16,
+        color: '#333',
+        marginLeft: 12,
+    },
+    upgradeContainer: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    upgradeText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    upgradeButton: {
+        backgroundColor: '#007AFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+        width: '100%',
+    },
+    buttonIcon: {
+        marginRight: 8,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    noteText: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 12,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
 }); 
