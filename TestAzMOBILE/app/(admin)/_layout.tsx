@@ -41,7 +41,7 @@ export default function AdminLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Dashboard',
+                    title: translations.dashboard,
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="home" size={size} color={color} />
                     ),
@@ -52,7 +52,7 @@ export default function AdminLayout() {
                     <Tabs.Screen
                         name="users"
                         options={{
-                            title: 'Users',
+                            title: translations.users,
                             tabBarIcon: ({ color, size }) => (
                                 <Ionicons name="people" size={size} color={color} />
                             ),

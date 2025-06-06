@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/apiService';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { translations } from '@/constants/translations';
 
 export default function PremiumScreen() {
     const { user, refreshUser } = useAuth();
@@ -13,7 +14,7 @@ export default function PremiumScreen() {
         if (!user) return;
 
         if (user.isPremium) {
-            Alert.alert('Already Premium', 'You are already a premium user!');
+            Alert.alert(translations.error, translations.alreadyPremium);
             return;
         }
 
@@ -21,15 +22,15 @@ export default function PremiumScreen() {
         try {
             await apiService.createPremiumRequest();
             Alert.alert(
-                'Request Submitted',
-                'Your premium request has been submitted successfully. An admin will review your request soon.',
+                translations.success,
+                translations.premiumRequestSubmitted,
                 [{ text: 'OK', onPress: refreshUser }]
             );
         } catch (error: any) {
             if (error.message && (error.message.includes("already have a pending premium request") || (error.response && error.response.status === 400))) {
-                Alert.alert("Warning", "You already have a pending premium request (or a similar warning).");
+                Alert.alert(translations.warning, translations.pendingPremiumRequest);
             } else {
-                Alert.alert("Error", (error.message || "Failed to submit premium request"));
+                Alert.alert(translations.error, translations.failedToSubmitPremiumRequest);
             }
         } finally {
             setLoading(false);
@@ -39,7 +40,7 @@ export default function PremiumScreen() {
     if (!user) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>Please log in to access premium features</Text>
+                <Text style={styles.errorText}>{translations.pleaseLogIn}</Text>
             </View>
         );
     }
