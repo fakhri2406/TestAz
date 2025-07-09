@@ -35,6 +35,7 @@ export const translations = {
   home: 'Ana Səhifə',
   tests: 'Testlər',
   profile: 'Profil',
+  info: 'Məlumat',
 
   // Home
   welcomeToTestAz: 'TestAz-a xoş gəldiniz',
@@ -172,6 +173,13 @@ export const translations = {
   users: 'İstifadəçilər',
   premiumRequests: 'Premium sorğular',
   admin: 'Administrator',
+
+  // Info
+  professor: 'Professor',
+  professorInfo: 'Professor Məlumatları',
+  professorPhoto: 'Professor Şəkli',
+  professorNumber: 'Professor Nömrəsi',
+  contactProfessor: 'Professor ilə Əlaqə',
   warning: 'Xəbərdarlıq',
   premiumRequestPending: 'Premium sorğunuz artıq gözləyir',
   premiumRequestFailed: 'Premium sorğusu göndərilmədi',

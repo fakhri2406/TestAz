@@ -69,6 +69,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="info"
+          options={{
+            title: translations.info,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="information-circle" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: translations.profile,
@@ -123,6 +132,15 @@ export default function TabLayout() {
           title: translations.tests,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="info"
+        options={{
+          title: translations.info,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="information-circle" size={size} color={color} />
           ),
         }}
       />
