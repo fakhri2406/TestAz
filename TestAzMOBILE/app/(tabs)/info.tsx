@@ -16,8 +16,7 @@ export default function InfoScreen() {
   const [imageError, setImageError] = React.useState(false);
 
   const professorData = {
-    name: 'Dr. Əli Məmmədov',
-    title: 'Baş Professor',
+    name: 'Fərid Qurbanov',
     department: 'Huquq Elmləri',
     university: 'Bakı Dövlət Universiteti',
     phone: '+994 51 355 51 83',
