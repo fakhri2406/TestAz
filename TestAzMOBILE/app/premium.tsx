@@ -5,6 +5,7 @@ import { apiService } from '../services/apiService';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { translations } from '@/constants/translations';
+import { router } from 'expo-router';
 
 export default function PremiumScreen() {
     const { user, refreshUser } = useAuth();
@@ -26,6 +27,7 @@ export default function PremiumScreen() {
                 translations.premiumRequestSubmitted,
                 [{ text: 'OK', onPress: refreshUser }]
             );
+            router.replace('/');
         } catch (error: any) {
             if (error.message && (error.message.includes("already have a pending premium request") || (error.response && error.response.status === 400))) {
                 Alert.alert(translations.warning, translations.pendingPremiumRequest);
