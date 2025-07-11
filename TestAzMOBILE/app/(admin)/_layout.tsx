@@ -1,10 +1,7 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect } from 'react';
+import { Stack } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { translations } from '@/constants/translations';
 
 export default function AdminLayout() {
     const { user } = useAuth();
@@ -19,56 +16,5 @@ export default function AdminLayout() {
         return null;
     }
 
-    return (
-        <Tabs
-            screenOptions={{
-                tabBarActiveTintColor: '#007AFF',
-                tabBarInactiveTintColor: '#666',
-                tabBarStyle: {
-                    backgroundColor: 'white',
-                    borderTopWidth: 1,
-                    borderTopColor: '#eee',
-                },
-                headerStyle: {
-                    backgroundColor: 'white',
-                },
-                headerTintColor: '#333',
-                headerTitleStyle: {
-                    fontWeight: '600',
-                },
-            }}
-        >
-            <Tabs.Screen
-                name="index"
-                options={{
-                    title: translations.dashboard,
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" size={size} color={color} />
-                    ),
-                }}
-            />
-            {user?.role === 'Admin' && (
-                <>
-                    <Tabs.Screen
-                        name="users"
-                        options={{
-                            title: translations.users,
-                            tabBarIcon: ({ color, size }) => (
-                                <Ionicons name="people" size={size} color={color} />
-                            ),
-                        }}
-                    />
-                    <Tabs.Screen
-                        name="premium-requests"
-                        options={{
-                            title: translations.premiumRequests,
-                            tabBarIcon: ({ color, size }) => (
-                                <Ionicons name="star" size={size} color={color} />
-                            ),
-                        }}
-                    />
-                </>
-            )}
-        </Tabs>
-    );
+  return <Stack />;
 } 

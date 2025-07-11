@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, Alert, Modal, View } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, Alert, Modal, View, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -99,90 +99,107 @@ export default function UsersScreen() {
     </TouchableOpacity>
   );
 
-  const renderUserActionsModal = () => (
-    <Modal
-      visible={modalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setModalVisible(false)}
+  const renderUserActionsModal = () => {
+    // Check if the selected user is the current admin
+    const isCurrentUser = selectedUser?.id === user?.id;
+    
+    return (
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
       >
-        <ThemedView 
-          style={[styles.modalContent, { backgroundColor }]}
-          onStartShouldSetResponder={() => true}
-          onTouchEnd={(e) => e.stopPropagation()}
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
         >
-          {selectedUser && (
-            <>
-              <ThemedView style={styles.modalHeader}>
-                <ThemedText style={styles.modalTitle}>User Actions</ThemedText>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <Ionicons name="close" size={24} color={tintColor} />
-                </TouchableOpacity>
-              </ThemedView>
-
-              <ThemedView style={styles.modalBody}>
-                <ThemedView>
-                  <ThemedText style={styles.modalUserName}>
-                    {selectedUser.name} {selectedUser.surname}
-                  </ThemedText>
-                  <ThemedText style={styles.modalUserEmail}>
-                    {selectedUser.email}
-                  </ThemedText>
-                </ThemedView>
-
-                <ThemedView style={styles.actionSection}>
-                  <ThemedText style={styles.actionSectionTitle}>Change Role</ThemedText>
-                  <ThemedView style={styles.roleButtons}>
-                    <TouchableOpacity
-                      style={[
-                        styles.roleButton,
-                        { backgroundColor: selectedUser.role === 'User' ? tintColor : '#ccc' }
-                      ]}
-                      onPress={() => handleRoleChange(selectedUser.id, 'User')}
-                    >
-                      <ThemedText style={styles.roleButtonText}>User</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.roleButton,
-                        { backgroundColor: selectedUser.role === 'Admin' ? tintColor : '#ccc' }
-                      ]}
-                      onPress={() => handleRoleChange(selectedUser.id, 'Admin')}
-                    >
-                      <ThemedText style={styles.roleButtonText}>Admin</ThemedText>
-                    </TouchableOpacity>
-                  </ThemedView>
-                </ThemedView>
-
-                <ThemedView style={styles.actionSection}>
-                  <ThemedText style={styles.actionSectionTitle}>Premium Status</ThemedText>
-                  <TouchableOpacity
-                    style={[
-                      styles.premiumButton,
-                      { backgroundColor: selectedUser.isPremium ? '#ff4444' : tintColor }
-                    ]}
-                    onPress={() => handlePremiumToggle(selectedUser.id, selectedUser.isPremium)}
-                  >
-                    <ThemedText style={styles.premiumButtonText}>
-                      {selectedUser.isPremium ? 'Remove Premium' : 'Make Premium'}
-                    </ThemedText>
+          <ThemedView 
+            style={[styles.modalContent, { backgroundColor }]}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            {selectedUser && (
+              <>
+                <ThemedView style={styles.modalHeader}>
+                  <ThemedText style={styles.modalTitle}>User Actions</ThemedText>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close" size={24} color={tintColor} />
                   </TouchableOpacity>
                 </ThemedView>
-              </ThemedView>
-            </>
-          )}
-        </ThemedView>
-      </TouchableOpacity>
-    </Modal>
-  );
+
+                <ThemedView style={styles.modalBody}>
+                  <ThemedView>
+                    <ThemedText style={styles.modalUserName}>
+                      {selectedUser.name} {selectedUser.surname}
+                    </ThemedText>
+                    <ThemedText style={styles.modalUserEmail}>
+                      {selectedUser.email}
+                    </ThemedText>
+                  </ThemedView>
+
+                  {isCurrentUser ? (
+                    <ThemedView style={styles.actionSection}>
+                      <ThemedText style={styles.actionSectionTitle}>Current User</ThemedText>
+                      <ThemedText style={styles.disabledText}>
+                        You cannot modify your own role or premium status.
+                      </ThemedText>
+                    </ThemedView>
+                  ) : (
+                    <>
+                      <ThemedView style={styles.actionSection}>
+                        <ThemedText style={styles.actionSectionTitle}>Change Role</ThemedText>
+                        <ThemedView style={styles.roleButtons}>
+                          <TouchableOpacity
+                            style={[
+                              styles.roleButton,
+                              { backgroundColor: selectedUser.role === 'User' ? tintColor : '#ccc' }
+                            ]}
+                            onPress={() => handleRoleChange(selectedUser.id, 'User')}
+                          >
+                            <ThemedText style={styles.roleButtonText}>User</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.roleButton,
+                              { backgroundColor: selectedUser.role === 'Admin' ? tintColor : '#ccc' }
+                            ]}
+                            onPress={() => handleRoleChange(selectedUser.id, 'Admin')}
+                          >
+                            <ThemedText style={styles.roleButtonText}>Admin</ThemedText>
+                          </TouchableOpacity>
+                        </ThemedView>
+                      </ThemedView>
+
+                      <ThemedView style={styles.actionSection}>
+                        <ThemedText style={styles.actionSectionTitle}>Premium Status</ThemedText>
+                        <TouchableOpacity
+                          style={[
+                            styles.premiumButton,
+                            { backgroundColor: selectedUser.isPremium ? '#ff4444' : tintColor }
+                          ]}
+                          onPress={() => handlePremiumToggle(selectedUser.id, selectedUser.isPremium)}
+                        >
+                          <ThemedText style={styles.premiumButtonText}>
+                            {selectedUser.isPremium ? 'Remove Premium' : 'Make Premium'}
+                          </ThemedText>
+                        </TouchableOpacity>
+                      </ThemedView>
+                    </>
+                  )}
+                </ThemedView>
+              </>
+            )}
+          </ThemedView>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Button title="Back to Main Menu" onPress={() => router.push('/')} />
       <ThemedView style={styles.container}>
         <ThemedView style={[styles.header, { borderBottomColor: useThemeColor({}, 'border') }]}>
           <ThemedText style={styles.title}>Users</ThemedText>
@@ -340,5 +357,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  disabledText: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
   },
 }); 

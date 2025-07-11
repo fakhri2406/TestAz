@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, Alert, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -94,6 +94,7 @@ export default function RequestsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Button title="Back to Main Menu" onPress={() => router.push('/')} />
       <ThemedView style={styles.container}>
         <ThemedView style={[styles.header, { borderBottomColor: useThemeColor({}, 'border') }]}>
           <ThemedText style={styles.title}>Premium Requests</ThemedText>
