@@ -43,6 +43,13 @@ class ApiService {
     return response.data;
   }
 
+  private async put<T>(endpoint: string, data: any) {
+    const headers = await this.getHeaders();
+    const url = `${this.baseUrl}${endpoint}`;
+    const response = await this.axiosInstance.put<T>(url, data, { headers });
+    return response.data;
+  }
+
   async login(email: string, password: string) {
     try {
       const response = await this.post('/api/auth/login', { email, password });
@@ -653,6 +660,30 @@ class ApiService {
     if (!response.ok) {
       const error = await response.text();
       throw new Error(error);
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<void> {
+    try {
+      await this.put(`/api/auth/users/${userId}/role`, { role });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
+  async updateUserPremiumStatus(userId: string, isPremium: boolean): Promise<void> {
+    try {
+      await this.put(`/api/auth/users/${userId}/premium`, { isPremium });
+    } catch (error) {
+      console.error('Error updating user premium status:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
     }
   }
 }

@@ -80,7 +80,7 @@ export default function TakeTestScreen() {
       setAnswers(new Array(formattedTest.questions.length).fill(-1));
     } catch (error) {
       console.error('Error loading test:', error);
-      Alert.alert('Error', 'Failed to load test. Please try again.');
+      Alert.alert(translations.error, translations.failedToLoadTest);
       router.back();
     } finally {
       setLoading(false);
@@ -96,12 +96,12 @@ export default function TakeTestScreen() {
   const handleSubmit = async () => {
     // Check if all questions are answered
     if (answers.some(answer => answer === -1)) {
-      Alert.alert('Warning', 'Please answer all questions before submitting.');
+      Alert.alert(translations.warning, translations.answerAllQuestions);
       return;
     }
 
     if (!test?.id) {
-      Alert.alert('Error', 'Test data is incomplete. Please try again.');
+      Alert.alert(translations.error, translations.testDataIncomplete);
       return;
     }
 
@@ -159,7 +159,7 @@ export default function TakeTestScreen() {
       console.error('Error submitting test:', error);
       Alert.alert(
         translations.error,
-        translations.failedToSubmit
+        translations.failedToSubmitTest
       );
     } finally {
       setSubmitting(false);

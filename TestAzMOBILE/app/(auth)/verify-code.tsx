@@ -33,7 +33,7 @@ export default function VerifyCodeScreen() {
     }
 
     if (code.length !== 4) {
-      Alert.alert(translations.error, 'Please enter a 4-digit verification code');
+      Alert.alert(translations.error, translations.invalidVerificationCode);
       return;
     }
 
@@ -56,9 +56,9 @@ export default function VerifyCodeScreen() {
       
       if (error instanceof Error) {
         if (error.message.includes('expired')) {
-          errorMessage = 'Verification code has expired. Please request a new one.';
+          errorMessage = translations.verificationCodeExpired;
         } else if (error.message.includes('Invalid')) {
-          errorMessage = 'Invalid verification code. Please try again.';
+          errorMessage = translations.invalidVerificationCode;
         } else {
           errorMessage = error.message;
         }

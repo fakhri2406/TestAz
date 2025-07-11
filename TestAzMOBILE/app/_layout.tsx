@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   useEffect(() => {
     if (!loading) {
@@ -25,7 +25,11 @@ function RootLayoutContent() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
+      {user?.role === 'Admin' ? (
+        <Stack.Screen name="(admin)" />
+      ) : (
+        <Stack.Screen name="(tabs)" />
+      )}
       <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
   );

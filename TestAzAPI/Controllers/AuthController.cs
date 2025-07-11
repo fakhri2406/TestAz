@@ -5,6 +5,7 @@ using TestAzAPI.Models.Dtos;
 using TestAzAPI.Repositories.Base;
 using TestAzAPI.Services;
 using System.Security.Cryptography;
+using System.Security.Claims;
 
 namespace TestAzAPI.Controllers;
 
@@ -171,6 +172,70 @@ public class AuthController : ControllerBase
             u.IsPremium
         }));
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("users/{userId}/role")]
+    public async Task<IActionResult> UpdateUserRole(string userId, [FromBody] UpdateRoleRequest request)
+    {
+        if (!Guid.TryParse(userId, out Guid userGuid))
+            return BadRequest("Invalid user ID format");
+
+        // Get current admin's ID from JWT token
+        var currentAdminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (currentAdminId == null || !Guid.TryParse(currentAdminId, out Guid currentAdminGuid))
+            return Unauthorized("Invalid admin token");
+
+        // Prevent admin from changing their own role
+        if (userGuid == currentAdminGuid)
+            return BadRequest("You cannot change your own role");
+
+        var user = await _userRepo.GetByIdAsync(userGuid);
+        if (user == null)
+            return NotFound("User not found");
+
+        if (request.Role != "User" && request.Role != "Admin")
+            return BadRequest("Invalid role. Must be 'User' or 'Admin'");
+
+        user.Role = request.Role;
+        await _userRepo.SaveChangesAsync();
+
+        return Ok(new { message = "User role updated successfully" });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("users/{userId}/premium")]
+    public async Task<IActionResult> UpdateUserPremiumStatus(string userId, [FromBody] UpdatePremiumRequest request)
+    {
+        if (!Guid.TryParse(userId, out Guid userGuid))
+            return BadRequest("Invalid user ID format");
+
+        // Get current admin's ID from JWT token
+        var currentAdminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (currentAdminId == null || !Guid.TryParse(currentAdminId, out Guid currentAdminGuid))
+            return Unauthorized("Invalid admin token");
+
+        // Prevent admin from changing their own premium status
+        if (userGuid == currentAdminGuid)
+            return BadRequest("You cannot change your own premium status");
+
+        var user = await _userRepo.GetByIdAsync(userGuid);
+        if (user == null)
+            return NotFound("User not found");
+
+        user.IsPremium = request.IsPremium;
+        if (request.IsPremium)
+        {
+            user.PremiumExpirationDate = DateTime.UtcNow.AddMonths(1);
+        }
+        else
+        {
+            user.PremiumExpirationDate = null;
+        }
+
+        await _userRepo.SaveChangesAsync();
+
+        return Ok(new { message = $"User premium status {(request.IsPremium ? "enabled" : "disabled")} successfully" });
+    }
 }
 
 public class VerifyCodeDto
@@ -182,4 +247,14 @@ public class VerifyCodeDto
 public class ResendCodeDto
 {
     public required string Email { get; set; }
+}
+
+public class UpdateRoleRequest
+{
+    public required string Role { get; set; }
+}
+
+public class UpdatePremiumRequest
+{
+    public required bool IsPremium { get; set; }
 }
