@@ -24,13 +24,13 @@ jobs:
         run: dotnet build ./TestAzAPI/TestAzAPI.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish ./TestAzAPI/TestAzAPI.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish ./TestAzAPI/TestAzAPI.csproj -c Release -o ./TestAzAPI/publish
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: dotnet-app
+          path: ./TestAzAPI/publish
 
   deploy:
     runs-on: windows-latest
@@ -40,14 +40,14 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
-          path: myapp
+          name: dotnet-app
+          path: ./publish
       
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'TestAzAPI'
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4B776FD769064252819900EBBF2BB11C }}
-          package: ./TestAzAPI/publish
+          package: ./publish
