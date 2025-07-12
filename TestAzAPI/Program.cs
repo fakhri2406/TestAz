@@ -64,6 +64,16 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
+
+
+
 // Add rate limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -133,7 +143,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Important: Use CORS before other middleware
-app.UseCors("AllowMobileApp");
+app.UseCors("AllowAll");
 
 // Add security headers
 app.Use(async (context, next) =>
