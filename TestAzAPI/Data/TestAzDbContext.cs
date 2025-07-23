@@ -36,6 +36,11 @@ public class TestAzDbContext : DbContext
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Add decimal precision to avoid silent truncation warnings
+        modelBuilder.Entity<Subscription>()
+            .Property(s => s.Amount)
+            .HasPrecision(18, 2);
+
         // Configure UserSolution entity
         modelBuilder.Entity<UserSolution>()
             .HasOne(us => us.User)
@@ -67,7 +72,7 @@ public class TestAzDbContext : DbContext
             .HasOne(ua => ua.Question)
             .WithMany(q => q.UserAnswers)
             .HasForeignKey(ua => ua.QuestionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Configure AnswerOption entity
         modelBuilder.Entity<AnswerOption>()

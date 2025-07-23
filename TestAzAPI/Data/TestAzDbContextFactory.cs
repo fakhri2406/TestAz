@@ -9,14 +9,14 @@ public class TestAzDbContextFactory : IDesignTimeDbContextFactory<TestAzDbContex
 {
     public TestAzDbContext CreateDbContext(string[] args)
     {
-        // Read appsettings.json from project directory
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
             .Build();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestAzDbContext>();
-        optionsBuilder.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
+        optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
 
         return new TestAzDbContext(optionsBuilder.Options);
     }

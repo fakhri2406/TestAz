@@ -5,7 +5,6 @@ namespace TestAzAPI.Services;
 
 public class EmailService : IEmailService
 {
-    private readonly IConfiguration _configuration;
     private readonly string _smtpServer;
     private readonly int _smtpPort;
     private readonly string _smtpUsername;
@@ -13,15 +12,14 @@ public class EmailService : IEmailService
     private readonly string _fromEmail;
     private readonly string _baseUrl;
 
-    public EmailService(IConfiguration configuration)
+    public EmailService()
     {
-        _configuration = configuration;
-        _smtpServer = _configuration["Email:SmtpServer"]!;
-        _smtpPort = int.Parse(_configuration["Email:SmtpPort"]!);
-        _smtpUsername = _configuration["Email:SmtpUsername"]!;
-        _smtpPassword = _configuration["Email:SmtpPassword"]!;
-        _fromEmail = _configuration["Email:FromEmail"]!;
-        _baseUrl = _configuration["App:BaseUrl"]!;
+        _smtpServer = Environment.GetEnvironmentVariable("Email__SmtpServer") ?? throw new InvalidOperationException("Email__SmtpServer not found in environment variables");
+        _smtpPort = int.Parse(Environment.GetEnvironmentVariable("Email__SmtpPort") ?? throw new InvalidOperationException("Email__SmtpPort not found in environment variables"));
+        _smtpUsername = Environment.GetEnvironmentVariable("Email__SmtpUsername") ?? throw new InvalidOperationException("Email__SmtpUsername not found in environment variables");
+        _smtpPassword = Environment.GetEnvironmentVariable("Email__SmtpPassword") ?? throw new InvalidOperationException("Email__SmtpPassword not found in environment variables");
+        _fromEmail = Environment.GetEnvironmentVariable("Email__FromEmail") ?? throw new InvalidOperationException("Email__FromEmail not found in environment variables");
+        _baseUrl = Environment.GetEnvironmentVariable("App__BaseUrl") ?? throw new InvalidOperationException("App__BaseUrl not found in environment variables");
     }
 
     public async Task SendVerificationEmailAsync(string to, string verificationToken)
