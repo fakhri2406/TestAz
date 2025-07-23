@@ -47,6 +47,13 @@ jobs:
         with:
           name: dotnet-app
           path: ./publish
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A651F9888AD54A1481446BD093743BA9 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6BB3C92C73AB45F18D50BC3A4B302FE4 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4674F92A83914B28A91681CB30B3F392 }}
       
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
