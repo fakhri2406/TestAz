@@ -269,3 +269,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml 
+# Ignore local development appsettings
+/TestAzAPI/appsettings.Development.json 

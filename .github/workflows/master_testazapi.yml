@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
 
@@ -19,9 +22,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
+      - name: Restore dependencies
+        run: dotnet restore TestAz.sln
 
       - name: Build with dotnet
-        run: dotnet build ./TestAzAPI/TestAzAPI.csproj --configuration Release
+        run: dotnet build TestAz.sln --configuration Release --no-restore
 
       - name: dotnet publish
         run: dotnet publish ./TestAzAPI/TestAzAPI.csproj -c Release -o ./TestAzAPI/publish
@@ -33,7 +38,7 @@ jobs:
           path: ./TestAzAPI/publish
 
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
 
     steps:
