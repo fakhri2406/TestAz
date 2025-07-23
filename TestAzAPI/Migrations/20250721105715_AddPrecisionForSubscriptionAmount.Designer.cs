@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TestAzAPI.Data;
 
@@ -11,9 +12,11 @@ using TestAzAPI.Data;
 namespace TestAzAPI.Migrations
 {
     [DbContext(typeof(TestAzDbContext))]
-    partial class TestAzDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250721105715_AddPrecisionForSubscriptionAmount")]
+    partial class AddPrecisionForSubscriptionAmount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -20,7 +20,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not found in configuration");
+var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new InvalidOperationException("JWT Key not found in environment variables (Jwt__Key)");
+var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new InvalidOperationException("JWT Issuer not found in environment variables (Jwt__Issuer)");
+var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new InvalidOperationException("JWT Audience not found in environment variables (Jwt__Audience)");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -30,15 +32,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
 // Add CORS
-var allowedOrigins = builder.Configuration.GetSection("Security:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 var isDevelopment = builder.Environment.IsDevelopment();
+var allowedOrigins = isDevelopment
+    ? Array.Empty<string>()
+    : (Environment.GetEnvironmentVariable("Security__AllowedOrigins") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries);
 
 builder.Services.AddCors(options =>
 {
@@ -97,9 +102,21 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddDbContext<TestAzDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var defaultConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Connection string not found in environment variables (ConnectionStrings__DefaultConnection)");
+    options.UseSqlServer(
+        defaultConn,
+        sqlServerOptions => 
+        {
+            sqlServerOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null);
+        });
+});
 
-builder.Services.AddScoped<TestAzAPI.Repositories.Base.IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
 builder.Services.AddScoped<IVideoCourseRepository, VideoCourseRepository>();
 builder.Services.AddScoped<IUserSolutionRepository, UserSolutionRepository>();
@@ -108,6 +125,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add Kapital Pay configuration
 builder.Services.Configure<KapitalPaySettings>(builder.Configuration.GetSection("KapitalPay"));
+builder.Services.Configure<PayriffSettings>(builder.Configuration.GetSection("Payriff"));
 builder.Services.AddHttpClient<IKapitalPayService, KapitalPayService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
@@ -138,7 +156,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "TestAz API V1");
-        c.RoutePrefix = string.Empty; // Serve Swagger at root
+        c.RoutePrefix = "swagger"; // Serve Swagger at /swagger
     });
 }
 
