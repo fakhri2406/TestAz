@@ -14,15 +14,15 @@ using TestAzAPI.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add JWT Authentication
-var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new InvalidOperationException("JWT Key not found in environment variables (Jwt__Key)");
-var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new InvalidOperationException("JWT Issuer not found in environment variables (Jwt__Issuer)");
-var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new InvalidOperationException("JWT Audience not found in environment variables (Jwt__Audience)");
+// JWT Auth
+var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new InvalidOperationException("JWT Key not found");
+var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? throw new InvalidOperationException("JWT Issuer not found");
+var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? throw new InvalidOperationException("JWT Audience not found");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -38,48 +38,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Add CORS
-var isDevelopment = builder.Environment.IsDevelopment();
-var allowedOrigins = isDevelopment
-    ? Array.Empty<string>()
-    : (Environment.GetEnvironmentVariable("Security__AllowedOrigins") ?? "")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowMobileApp",
-        builder =>
-        {
-            if (isDevelopment)
-            {
-                builder
-                    .SetIsOriginAllowed(_ => true) // Allow any origin in development
-                    .AllowAnyMethod()
-                    .AllowAnyHeader();
-            }
-            else
-            {
-                builder
-                    .WithOrigins(allowedOrigins)
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials()
-                    .WithExposedHeaders("Content-Type", "Content-Length", "Content-Disposition", "Authorization");
-            }
-        });
-});
-
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
-
-
-// Add rate limiting
+// Rate limiting
 builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
@@ -93,7 +64,7 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// Configure JSON serialization
+// JSON serialization
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -101,39 +72,33 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
+// DB
 builder.Services.AddDbContext<TestAzDbContext>(options =>
 {
-    var defaultConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string not found in environment variables (ConnectionStrings__DefaultConnection)");
-    options.UseSqlServer(
-        defaultConn,
-        sqlServerOptions => 
-        {
-            sqlServerOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(10),
-                errorNumbersToAdd: null);
-        });
+    var conn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("DB connection string not found");
+    options.UseSqlServer(conn, sqlOpts =>
+    {
+        sqlOpts.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+    });
 });
 
+// DI
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
 builder.Services.AddScoped<IVideoCourseRepository, VideoCourseRepository>();
 builder.Services.AddScoped<IUserSolutionRepository, UserSolutionRepository>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-
-// Add Kapital Pay configuration
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IPremiumRequestRepository, PremiumRequestRepository>();
 builder.Services.Configure<KapitalPaySettings>(builder.Configuration.GetSection("KapitalPay"));
 builder.Services.Configure<PayriffSettings>(builder.Configuration.GetSection("Payriff"));
 builder.Services.AddHttpClient<IKapitalPayService, KapitalPayService>();
-builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
-
-builder.Services.AddScoped<IPremiumRequestRepository, PremiumRequestRepository>();
 
 var app = builder.Build();
 
-// Apply database migrations
+// Migrate DB
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -145,28 +110,33 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred during database migration.");
     }
 }
 
-// Configure the HTTP request pipeline.
+// Swagger (dev only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "TestAz API V1");
-        c.RoutePrefix = "swagger"; // Serve Swagger at /swagger
+        c.RoutePrefix = "swagger";
     });
 }
 
-// Important: Use CORS before other middleware
+// ✅ Enforce HTTPS before everything (in production)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// ✅ CORS must come early and before auth
 app.UseCors("AllowAll");
 
-// Add security headers
+// Security headers (prod)
 app.Use(async (context, next) =>
 {
-    // Remove strict security headers in development
     if (!app.Environment.IsDevelopment())
     {
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -179,21 +149,15 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Add rate limiting middleware
+// Rate limiting, auth
 app.UseRateLimiter();
-
-// Only use HTTPS redirection in production
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
-
-// Add authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Routing
 app.MapControllers();
 app.MapGet("/ping", () => "pong");
+app.MapMethods("/", new[] { "HEAD" }, () => Results.Ok());
 
 app.Run();
 
