@@ -31,7 +31,7 @@ const getBaseUrl = () => {
 
 // API configuration
 export const API_CONFIG = {
-    BASE_URL: 'https://testazapi-fwe7gfbyeshwgfg8.polandcentral-01.azurewebsites.net',
+    BASE_URL: 'testaz-api-gtgthpeqa2h6fkbt.polandcentral-01.azurewebsites.net',
     TIMEOUT: getEnvironment().timeout,
     HEADERS: {
         'Content-Type': 'application/json',
