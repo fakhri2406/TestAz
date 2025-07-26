@@ -17,12 +17,9 @@ export default function InfoScreen() {
 
   const professorData = {
     name: 'Fərid Qurbanov',
-    department: 'Huquq Elmləri',
-    university: 'Bakı Dövlət Universiteti',
     phone: '+994 51 355 51 83',
-    email: 'ali.mammadov@bdu.edu.az',
-    office: 'Bina 2, Otaq 305',
-    officeHours: 'Bazar ertəsi - Cümə: 10:00-12:00',
+    phone2: '+994 55 605 54 55',
+    email: 'ferid.qurbanov.111@inbox.ru',
     // Local asset (recommended for production)
     photo: require('@/assets/images/professor-photo.jpeg'),
     // Network URL (alternative)
@@ -78,15 +75,6 @@ export default function InfoScreen() {
               <ThemedText type="title" style={styles.professorName}>
                 {professorData.name}
               </ThemedText>
-              <ThemedText style={styles.professorTitle}>
-                {professorData.title}
-              </ThemedText>
-              <ThemedText style={styles.professorDepartment}>
-                {professorData.department}
-              </ThemedText>
-              <ThemedText style={styles.professorUniversity}>
-                {professorData.university}
-              </ThemedText>
             </ThemedView>
           </ThemedView>
 
@@ -111,6 +99,9 @@ export default function InfoScreen() {
                 <ThemedText style={styles.contactValue}>
                   {professorData.phone}
                 </ThemedText>
+                <ThemedText style={styles.contactValue}>
+                  {professorData.phone2}
+                </ThemedText>
               </ThemedView>
               <Ionicons name="chevron-forward" size={20} color={borderColor} />
             </TouchableOpacity>
@@ -134,35 +125,8 @@ export default function InfoScreen() {
               <Ionicons name="chevron-forward" size={20} color={borderColor} />
             </TouchableOpacity>
 
-            {/* Office */}
-            <ThemedView style={[styles.contactItem, { borderBottomColor: borderColor }]}>
-              <ThemedView style={styles.contactIcon}>
-                <Ionicons name="location" size={24} color={tintColor} />
-              </ThemedView>
-              <ThemedView style={styles.contactInfo}>
-                <ThemedText style={styles.contactLabel}>
-                  Ofis
-                </ThemedText>
-                <ThemedText style={styles.contactValue}>
-                  {professorData.office}
-                </ThemedText>
-              </ThemedView>
-            </ThemedView>
 
-            {/* Office Hours */}
-            <ThemedView style={styles.contactItem}>
-              <ThemedView style={styles.contactIcon}>
-                <Ionicons name="time" size={24} color={tintColor} />
-              </ThemedView>
-              <ThemedView style={styles.contactInfo}>
-                <ThemedText style={styles.contactLabel}>
-                  Qəbul Saatları
-                </ThemedText>
-                <ThemedText style={styles.contactValue}>
-                  {professorData.officeHours}
-                </ThemedText>
-              </ThemedView>
-            </ThemedView>
+          
           </ThemedView>
         </ThemedView>
       </ThemedView>

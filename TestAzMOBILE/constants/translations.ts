@@ -38,7 +38,7 @@ export const translations = {
   info: 'Məlumat',
 
   // Home
-  welcomeToTestAz: 'TestAz-a xoş gəldiniz',
+  welcomeToTestAz: 'QanunQapısı-na xoş gəldiniz',
   learningJourneyStarts: 'Öyrənmə səfəriniz buradan başlayır',
 
   // Not Found
@@ -176,10 +176,10 @@ export const translations = {
 
   // Info
   professor: 'Professor',
-  professorInfo: 'Professor Məlumatları',
-  professorPhoto: 'Professor Şəkli',
-  professorNumber: 'Professor Nömrəsi',
-  contactProfessor: 'Professor ilə Əlaqə',
+  professorInfo: 'Müəllim Məlumatları',
+  professorPhoto: 'Müəllim Şəkli',
+  professorNumber: 'Müəllim Nömrəsi',
+  contactProfessor: 'Müəllim ilə Əlaqə',
   warning: 'Xəbərdarlıq',
   premiumRequestPending: 'Premium sorğunuz artıq gözləyir',
   premiumRequestFailed: 'Premium sorğusu göndərilmədi',

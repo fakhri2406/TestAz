@@ -226,17 +226,28 @@ export default function TestsScreen() {
         <ThemedView style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={64} color={tintColor} />
           <ThemedText style={styles.emptyText}>{translations.noTestsFound}</ThemedText>
-          {isAdmin && (
+          <ThemedView style={styles.actionButtonsContainer}>
+            {isAdmin && (
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: tintColor }]}
+                onPress={handleAddTest}
+              >
+                <Ionicons name="add" size={24} color={backgroundColor} />
+                <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}> 
+                  {translations.addNewTest}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: tintColor }]}
-              onPress={handleAddTest}
+              style={[styles.actionButton, { backgroundColor: cardBackgroundColor }]}
+              onPress={onRefresh}
             >
-              <Ionicons name="add" size={24} color={backgroundColor} />
-              <ThemedText style={[styles.addButtonText, { color: backgroundColor }]}>
-                {translations.addNewTest}
+              <Ionicons name="refresh" size={24} color={tintColor} />
+              <ThemedText style={[styles.actionButtonText, { color: tintColor }]}> 
+                {translations.refresh}
               </ThemedText>
             </TouchableOpacity>
-          )}
+          </ThemedView>
         </ThemedView>
       ) : (
         <>
@@ -270,7 +281,7 @@ export default function TestsScreen() {
                   onPress={handleAddTest}
                 >
                   <Ionicons name="add" size={24} color={backgroundColor} />
-                  <ThemedText style={[styles.actionButtonText, { color: backgroundColor }]}>
+                  <ThemedText style={[styles.actionButtonText, { color: backgroundColor }]}> 
                     {translations.addNewTest}
                   </ThemedText>
                 </TouchableOpacity>
@@ -280,7 +291,7 @@ export default function TestsScreen() {
                 onPress={onRefresh}
               >
                 <Ionicons name="refresh" size={24} color={tintColor} />
-                <ThemedText style={[styles.actionButtonText, { color: tintColor }]}>
+                <ThemedText style={[styles.actionButtonText, { color: tintColor }]}> 
                   {translations.refresh}
                 </ThemedText>
               </TouchableOpacity>
