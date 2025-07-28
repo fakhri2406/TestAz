@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api';
 import { AuthError, ValidationError } from '../utils/errors';
 import { translations } from '@/constants/translations';
+import { ExceptionHandler } from '@/utils/exceptionHandler';
 
 class ApiService {
   private baseUrl: string;
@@ -80,35 +81,14 @@ class ApiService {
 
   async signup(userData: { email: string; password: string; name: string; surname: string }) {
     try {
-      console.log('Attempting signup with data:', { ...userData, password: '[REDACTED]' });
-      console.log('Base URL:', this.baseUrl);
-      const endpoint = '/api/auth/signup';
-      console.log('Endpoint:', endpoint);
-      const url = `${this.baseUrl}${endpoint}`;
-      console.log('Full URL:', url);
-      
-      const headers = await this.getHeaders();
-      console.log('Request headers:', headers);
-      
-      const response = await this.axiosInstance.post(url, userData, { headers });
-      console.log('Signup response:', response.data);
+      const response = await this.axiosInstance.post('/api/auth/signup', userData, { 
+        headers: await this.getHeaders() 
+      });
       return response.data;
     } catch (error) {
-      console.error('Signup error details:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers,
-            data: error.config?.data
-          }
-        });
-      }
-      throw error;
+      ExceptionHandler.handle(error, 'signup');
+      // Don't re-throw the error to prevent logging
+      return { success: false };
     }
   }
 

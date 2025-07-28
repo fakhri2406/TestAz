@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 import { Ionicons } from '@expo/vector-icons';
+import { ExceptionHandler } from '@/utils/exceptionHandler';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -61,13 +62,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      console.error('Login error:', error);
-      const errorMessage = error instanceof Error ? error.message : translations.loginFailed;
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(errorMessage, ToastAndroid.LONG);
-      } else {
-        Alert.alert(translations.error, errorMessage);
-      }
+      ExceptionHandler.handle(error, 'login');
     } finally {
       setLoading(false);
     }

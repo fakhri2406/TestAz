@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
 import { validateEmail, validatePassword } from '@/utils/validation';
+import { ExceptionHandler } from '@/utils/exceptionHandler';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -68,13 +69,16 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      await api.signup({ name, surname, email, password });
-      router.push({
-        pathname: '/verify-code',
-        params: { email }
-      });
+      const result = await api.signup({ name, surname, email, password });
+      if (result && result.success !== false) {
+        router.push({
+          pathname: '/verify-code',
+          params: { email }
+        });
+      }
     } catch (error) {
-      Alert.alert(translations.error, error instanceof Error ? error.message : translations.signupFailed);
+      // Exception handler will show appropriate user notification
+      ExceptionHandler.handle(error, 'signup', () => router.replace('/login'));
     } finally {
       setLoading(false);
     }
@@ -83,10 +87,10 @@ export default function SignupScreen() {
   const handleResendVerification = async () => {
     setLoading(true);
     try {
-      await api.resendVerification(email);
+      await api.resendVerification({ email });
       Alert.alert(translations.success, translations.verificationEmailResent);
     } catch (error) {
-      Alert.alert(translations.error, error instanceof Error ? error.message : translations.resendVerificationFailed);
+      ExceptionHandler.handle(error, 'resendVerification');
     } finally {
       setLoading(false);
     }
