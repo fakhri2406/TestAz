@@ -2,7 +2,7 @@ name: Build & Deploy ASP.NET API to Contabo
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build-and-deploy:
