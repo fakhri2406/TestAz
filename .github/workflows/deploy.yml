@@ -1,0 +1,53 @@
+name: Build & Deploy ASP.NET API to Contabo
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/testaz-api:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore TestAzAPI/TestAzAPI.csproj
+
+    - name: Build
+      run: dotnet build TestAzAPI/TestAzAPI.csproj -c Release
+
+    - name: Publish
+      run: dotnet publish TestAzAPI/TestAzAPI.csproj -c Release -o ./publish
+
+    - name: Docker login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build Docker image
+      run: docker build -t $IMAGE_NAME .
+
+    - name: Push Docker image
+      run: docker push $IMAGE_NAME
+
+    - name: Deploy to Contabo via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd /opt/testaz-api
+          docker compose pull
+          docker compose down
+          docker compose up -d
