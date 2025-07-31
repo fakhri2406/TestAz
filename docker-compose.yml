@@ -15,7 +15,7 @@ services:
       - testaz-net
 
   api:
-    image: fakhri2406/testaz-api:latest
+    image: fakhri2406/testazapi:latest
     container_name: testaz_api
     depends_on:
       - db

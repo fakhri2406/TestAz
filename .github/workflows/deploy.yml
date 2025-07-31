@@ -8,7 +8,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/testaz-api:latest
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/testazapi:latest
 
     steps:
     - name: Checkout repository
@@ -47,7 +47,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /opt/testaz-api
+          cd /opt/testazapi
           docker compose pull
           docker compose down
           docker compose up -d
