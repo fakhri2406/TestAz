@@ -271,3 +271,4 @@ FodyWeavers.xsd
 *.sln.iml 
 # Ignore local development appsettings
 /TestAzAPI/appsettings.Development.json 
+.env
