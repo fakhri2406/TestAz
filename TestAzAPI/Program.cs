@@ -7,10 +7,11 @@ using TestAzAPI.Repositories;
 using TestAzAPI.Repositories.Base;
 using TestAzAPI.Services;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using TestAzAPI.Configuration;
+using DotNetEnv;
+// Load environment variables from .env file
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,9 +78,9 @@ builder.Services.AddDbContext<TestAzDbContext>(options =>
 {
     var conn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
         ?? throw new InvalidOperationException("DB connection string not found");
-    options.UseSqlServer(conn, sqlOpts =>
+    options.UseNpgsql(conn, npgsqlOpts =>
     {
-        sqlOpts.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        npgsqlOpts.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
     });
 });
 

@@ -16,7 +16,7 @@ public class TestAzDbContextFactory : IDesignTimeDbContextFactory<TestAzDbContex
             .Build();
 
         var optionsBuilder = new DbContextOptionsBuilder<TestAzDbContext>();
-        optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+        optionsBuilder.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
 
         return new TestAzDbContext(optionsBuilder.Options);
     }
