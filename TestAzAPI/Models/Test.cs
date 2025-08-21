@@ -19,6 +19,6 @@ public class Test
     public bool IsPremium { get; set; } = false;
     
     public ICollection<Question> Questions { get; set; } = new List<Question>();
-    
+    public ICollection<OpenQuestion> OpenQuestions { get; set; } = new List<OpenQuestion>();
     public ICollection<UserSolution> UserSolutions { get; set; } = new List<UserSolution>();
 }

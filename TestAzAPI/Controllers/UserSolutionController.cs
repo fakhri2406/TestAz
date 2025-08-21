@@ -71,14 +71,31 @@ public class UserSolutionController : ControllerBase
         await _solutionRepo.AddAsync(solution);
         await _solutionRepo.SaveChangesAsync();
 
-        return Ok(new { 
+        return Ok(new
+        {
             id = solution.Id,
             message = "Solution submitted successfully",
             score = request.ScoreString,
             totalQuestions = request.TotalQuestions,
             correctAnswers = request.CorrectAnswers,
             totalPossiblePoints = test.Questions.Sum(q => q.Points),
-            earnedPoints = solution.Answers.Sum(a => a.PointsEarned ?? 0)
+            earnedPoints = solution.Answers.Sum(a => a.PointsEarned ?? 0),
+            answers = solution.Answers.Select(a => {
+                var question = test.Questions.First(q => q.Id == a.QuestionId);
+                var orderedOptions = question.Options.OrderBy(o => o.OrderIndex).ToList();
+                var indices = a.AnswerText.Split(',');
+                var selectedOptionIndex = int.Parse(indices[0]);
+                var correctOptionIndex = int.Parse(indices[1]);
+
+                return new
+                {
+                    questionId = a.QuestionId,
+                    selectedOptionIndex = selectedOptionIndex,
+                    correctOptionIndex = correctOptionIndex,
+                    isCorrect = a.IsCorrect,
+                    options = orderedOptions.Select(o => o.Text).ToList()
+                };
+            }).ToList()
         });
     }
 

@@ -87,6 +87,11 @@ export const translations = {
   submitTest: 'Testi təqdim et',
   returnToTests: 'Testlərə qayıt',
   addNewTest: 'Yeni test əlavə et',
+  correctAnswers: 'Düzgün cavablar',
+  noQuestionsAvailable: "cavablar",
+  incorrectAnswers: 'Səhv cavablar',
+  passed: 'Keçdi',
+  failed: 'Uğursuz', 
   noTestsFound: 'Test tapılmadı',
 
   // Auth

@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { api } from '@/services/api';
-import { translations } from '@/constants/translations';
+import React, { useState, useEffect } from "react";
+import { StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { api } from "@/services/api";
+import { translations } from "@/constants/translations";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+interface Option {
+  text: string;
+  isCorrect?: boolean;
+  orderIndex?: number;
+}
 
 interface Question {
   id: string;
   text: string;
-  options: string[];
+  options: Option[];
   correctOptionIndex: number;
 }
 
@@ -23,6 +30,39 @@ interface Test {
   questions: Question[];
 }
 
+const saveAnswerLocally = async (
+  questionId: string,
+  selectedOptionIndex: number
+) => {
+  try {
+    const storedAnswers = await AsyncStorage.getItem("userAnswers");
+    let answers = storedAnswers ? JSON.parse(storedAnswers) : {};
+    answers[questionId] = selectedOptionIndex;
+    await AsyncStorage.setItem("userAnswers", JSON.stringify(answers));
+  } catch (error) {
+    console.error("Error saving answer locally:", error);
+  }
+};
+
+const loadLocalAnswers = async () => {
+  try {
+    const storedAnswers = await AsyncStorage.getItem("userAnswers");
+    return storedAnswers ? JSON.parse(storedAnswers) : {};
+  } catch (error) {
+    console.error("Error loading local answers:", error);
+    return {};
+  }
+};
+
+const clearLocalAnswers = async () => {
+  try {
+    await AsyncStorage.removeItem("userAnswers");
+    console.log("Local answers cleared from AsyncStorage");
+  } catch (error) {
+    console.error("Error clearing local answers:", error);
+  }
+};
+
 export default function TakeTestScreen() {
   const { id } = useLocalSearchParams();
   const [test, setTest] = useState<Test | null>(null);
@@ -30,56 +70,89 @@ export default function TakeTestScreen() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const tintColor = useThemeColor({}, 'tint');
-  const backgroundColor = useThemeColor({}, 'background');
-  const cardBackgroundColor = useThemeColor({}, 'background');
+  const tintColor = useThemeColor({}, "tint");
+  const backgroundColor = useThemeColor({}, "background");
+  const cardBackgroundColor = useThemeColor({}, "background");
 
   useEffect(() => {
     loadTest();
   }, [id]);
 
+  const saveTestAnswers = async (
+    testId: string,
+    answers: number[],
+    resultId: string
+  ) => {
+    try {
+      const storedData = await AsyncStorage.getItem("testResults");
+      let results = storedData ? JSON.parse(storedData) : {};
+
+      results[resultId] = {
+        testId,
+        answers,
+        timestamp: Date.now(),
+      };
+
+      await AsyncStorage.setItem("testResults", JSON.stringify(results));
+      console.log("Test answers saved locally for result:", resultId);
+    } catch (error) {
+      console.error("Error saving test answers:", error);
+    }
+  };
+
   const loadTest = async () => {
     try {
       setLoading(true);
+      
+      await clearLocalAnswers();
+      
       const testData = await api.getTest(id as string);
-      console.log('Raw test data:', JSON.stringify(testData, null, 2));
+      console.log("Raw test data:", JSON.stringify(testData, null, 2));
 
-      // Ensure we have a properly formatted test object
       const formattedTest: Test = {
-        id: testData.id || '',
-        title: testData.title || '',
-        description: testData.description || '',
-        questions: Array.isArray(testData.questions) 
-          ? testData.questions.map(q => {
-              console.log('Processing question:', {
+        id: testData.id || "",
+        title: testData.title || "",
+        description: testData.description || "",
+        questions: Array.isArray(testData.questions)
+          ? testData.questions.map((q) => {
+              console.log("Processing question:", {
                 id: q.id,
                 text: q.text,
-                options: q.options
+                options: q.options,
               });
 
-              // Sort options by orderIndex and keep the full object
-              const orderedOptions = [...q.options].sort((a, b) => a.orderIndex - b.orderIndex);
-              const correctOptionIndex = orderedOptions.findIndex(opt => opt.isCorrect) >= 0 ? orderedOptions.findIndex(opt => opt.isCorrect) : -1;
+              const orderedOptions = [...q.options].sort(
+                (a, b) => a.orderIndex - b.orderIndex
+              );
+              const correctOptionIndex =
+                orderedOptions.findIndex((opt) => opt.isCorrect) >= 0
+                  ? orderedOptions.findIndex((opt) => opt.isCorrect)
+                  : -1;
 
               const formattedQuestion = {
-                id: q.id || '',
-                text: q.text || '',
-                options: orderedOptions, // keep full option objects
-                correctOptionIndex: correctOptionIndex
+                id: q.id || "",
+                text: q.text || "",
+                options: orderedOptions,
+                correctOptionIndex: correctOptionIndex,
               };
 
-              console.log('Formatted question:', formattedQuestion);
+              console.log("Formatted question:", formattedQuestion);
               return formattedQuestion;
             })
-          : []
+          : [],
       };
 
-      console.log('Final formatted test:', JSON.stringify(formattedTest, null, 2));
+      console.log(
+        "Final formatted test:",
+        JSON.stringify(formattedTest, null, 2)
+      );
       setTest(formattedTest);
-      // Initialize answers array with -1 (no answer selected)
-      setAnswers(new Array(formattedTest.questions.length).fill(-1));
+      
+      // Устанавливаем пустые ответы (-1 означает "не выбрано")
+      const initialAnswers = Array(formattedTest.questions.length).fill(-1);
+      setAnswers(initialAnswers);
     } catch (error) {
-      console.error('Error loading test:', error);
+      console.error("Error loading test:", error);
       Alert.alert(translations.error, translations.failedToLoadTest);
       router.back();
     } finally {
@@ -94,8 +167,7 @@ export default function TakeTestScreen() {
   };
 
   const handleSubmit = async () => {
-    // Check if all questions are answered
-    if (answers.some(answer => answer === -1)) {
+    if (answers.some((answer) => answer === -1)) {
       Alert.alert(translations.warning, translations.answerAllQuestions);
       return;
     }
@@ -108,59 +180,66 @@ export default function TakeTestScreen() {
     try {
       setSubmitting(true);
 
-      // Calculate correct answers and prepare submission data
-      const correctAnswersCount = test.questions.reduce((count, question, index) => {
-        return count + (answers[index] === question.correctOptionIndex ? 1 : 0);
-      }, 0);
-      
+      const correctAnswersCount = test.questions.reduce(
+        (count, question, index) =>
+          count + (answers[index] === question.correctOptionIndex ? 1 : 0),
+        0
+      );
+
       const totalQuestions = test.questions.length;
       const score = Math.round((correctAnswersCount / totalQuestions) * 100);
 
-      // Prepare answers array with selectedOptionIndex
-      const submissionAnswers = answers.map((selectedOptionIndex, index) => ({
-        questionId: test.questions[index].id,
-        selectedOptionIndex: selectedOptionIndex,
-        correctOptionIndex: test.questions[index].correctOptionIndex
-      }));
+      const submissionAnswers = answers.map((selectedOptionIndex, index) => {
+        const question = test.questions[index];
+        const correctOptionIndex = question.correctOptionIndex;
 
-      // Submit the solution
-      const solution = {
-        testId: test.id,
-        score: score,
-        scoreString: `${correctAnswersCount}/${totalQuestions}`,
-        totalQuestions: totalQuestions,
-        correctAnswers: correctAnswersCount,
-        answers: submissionAnswers,
-        questions: test.questions.map(q => ({
-          questionId: q.id,
-          correctOptionIndex: q.correctOptionIndex
-        }))
-      };
-
-      console.log('Submitting solution:', {
-        correctAnswersCount,
-        totalQuestions,
-        score,
-        scoreString: solution.scoreString,
-        questions: solution.questions
+        return {
+          questionId: question.id,
+          questionText: question.text,
+          selectedOptionIndex,
+          correctOptionIndex,
+          options: question.options.map((opt) => opt.text),
+          isCorrect: selectedOptionIndex === correctOptionIndex,
+          correctOption: question.options[correctOptionIndex]?.text || "",
+          AnswerText: question.options[selectedOptionIndex]?.text || "",
+        };
       });
 
+      const solution = {
+        testId: test.id,
+        score,
+        scoreString: `${correctAnswersCount}/${totalQuestions}`,
+        totalQuestions,
+        correctAnswers: correctAnswersCount,
+        answers: submissionAnswers,
+        questions: test.questions.map((q) => ({
+          questionId: q.id,
+          questionText: q.text,
+          correctOptionIndex: q.correctOptionIndex,
+          options: q.options.map((opt) => opt.text),
+        })),
+      };
+
       const response = await api.submitTestSolution(solution);
-      
-      // Format the ID to ensure it's a valid GUID
-      const formattedId = response.id?.toString() || '';
-      const guidFormat = formattedId.length === 32 
-        ? `${formattedId.slice(0, 8)}-${formattedId.slice(8, 12)}-${formattedId.slice(12, 16)}-${formattedId.slice(16, 20)}-${formattedId.slice(20)}`
-        : formattedId;
-      
-      // Redirect directly to results page
+
+      const formattedId = response.id?.toString() || "";
+      const guidFormat =
+        formattedId.length === 32
+          ? `${formattedId.slice(0, 8)}-${formattedId.slice(
+              8,
+              12
+            )}-${formattedId.slice(12, 16)}-${formattedId.slice(
+              16,
+              20
+            )}-${formattedId.slice(20)}`
+          : formattedId;
+
+      await saveTestAnswers(test.id, answers, guidFormat);
+
       router.push(`/test/result/${guidFormat}`);
     } catch (error) {
-      console.error('Error submitting test:', error);
-      Alert.alert(
-        translations.error,
-        translations.failedToSubmitTest
-      );
+      console.error("Error submitting test:", error);
+      Alert.alert(translations.error, translations.failedToSubmitTest);
     } finally {
       setSubmitting(false);
     }
@@ -178,8 +257,11 @@ export default function TakeTestScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
         <TouchableOpacity
-          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
-          onPress={() => router.push('/(tabs)/tests')}
+          style={[
+            styles.returnButton,
+            { backgroundColor: cardBackgroundColor },
+          ]}
+          onPress={() => router.push("/(tabs)/tests")}
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
           <ThemedText style={[styles.returnButtonText, { color: tintColor }]}>
@@ -192,24 +274,43 @@ export default function TakeTestScreen() {
           <ThemedText style={styles.description}>{test.description}</ThemedText>
 
           {test.questions.map((question, questionIndex) => (
-            <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+            <ThemedView
+              key={question.id}
+              style={[
+                styles.questionCard,
+                { backgroundColor: cardBackgroundColor },
+              ]}
+            >
               <ThemedText style={styles.questionNumber}>
                 {translations.question} {questionIndex + 1}
               </ThemedText>
-              <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+              <ThemedText style={styles.questionText}>
+                {question.text}
+              </ThemedText>
 
               {question.options.map((option, optionIndex) => (
                 <TouchableOpacity
                   key={optionIndex}
                   style={[
                     styles.optionContainer,
-                    answers[questionIndex] === optionIndex && { borderColor: tintColor }
+                    answers[questionIndex] === optionIndex && {
+                      borderColor: tintColor,
+                    },
                   ]}
-                  onPress={() => handleAnswerSelect(questionIndex, optionIndex)}
+                  onPress={async () => {
+                    handleAnswerSelect(questionIndex, optionIndex);
+                    await saveAnswerLocally(question.id, optionIndex);
+                  }}
                 >
-                  <ThemedText style={styles.optionText}>{option.text}</ThemedText>
+                  <ThemedText style={styles.optionText}>
+                    {option.text}
+                  </ThemedText>
                   {answers[questionIndex] === optionIndex && (
-                    <Ionicons name="checkmark-circle" size={24} color={tintColor} />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={tintColor}
+                    />
                   )}
                 </TouchableOpacity>
               ))}
@@ -222,7 +323,9 @@ export default function TakeTestScreen() {
           onPress={handleSubmit}
           disabled={submitting}
         >
-          <ThemedText style={[styles.submitButtonText, { color: backgroundColor }]}>
+          <ThemedText
+            style={[styles.submitButtonText, { color: backgroundColor }]}
+          >
             {submitting ? translations.submitting : translations.submitTest}
           </ThemedText>
         </TouchableOpacity>
@@ -240,15 +343,15 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   returnButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: "#ccc",
   },
   returnButtonText: {
     marginLeft: 8,
@@ -260,7 +363,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   description: {
@@ -274,7 +377,7 @@ const styles = StyleSheet.create({
   },
   questionNumber: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
   },
   questionText: {
@@ -282,12 +385,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   optionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -299,10 +402,10 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-}); 
+});

@@ -10,6 +10,7 @@ public class TestAzDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Test> Tests { get; set; }
     public DbSet<Question> Questions { get; set; }
+    public DbSet<OpenQuestion> OpenQuestions { get; set; }
     public DbSet<AnswerOption> AnswerOptions { get; set; }
     public DbSet<UserSolution> UserSolutions { get; set; }
     public DbSet<UserAnswer> UserAnswers { get; set; }
@@ -60,6 +61,17 @@ public class TestAzDbContext : DbContext
             .WithMany(t => t.Questions)
             .HasForeignKey(q => q.TestId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        // Configure OpenQuestion entity
+        modelBuilder.Entity<OpenQuestion>()
+            .HasOne(oq => oq.Test)
+            .WithMany(t => t.OpenQuestions)
+            .HasForeignKey(oq => oq.TestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OpenQuestion>()
+            .Property(oq => oq.Id)
+            .ValueGeneratedOnAdd();
 
         // Configure UserAnswer entity
         modelBuilder.Entity<UserAnswer>()

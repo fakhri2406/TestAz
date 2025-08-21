@@ -96,6 +96,7 @@ builder.Services.AddScoped<IPremiumRequestRepository, PremiumRequestRepository>(
 builder.Services.Configure<KapitalPaySettings>(builder.Configuration.GetSection("KapitalPay"));
 builder.Services.Configure<PayriffSettings>(builder.Configuration.GetSection("Payriff"));
 builder.Services.AddHttpClient<IKapitalPayService, KapitalPayService>();
+builder.Services.AddScoped<IOpenQuestionRepository, OpenQuestionRepository>();
 
 var app = builder.Build();
 

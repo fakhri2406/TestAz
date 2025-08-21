@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { translations } from '@/constants/translations';
+import { ScreenshotPrevention } from '@/components/ScreenshotPrevention';
 
 interface Test {
   id: string;
@@ -222,6 +223,7 @@ export default function TestsScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <ScreenshotPrevention enabled={true} />
       {tests.length === 0 ? (
         <ThemedView style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={64} color={tintColor} />
