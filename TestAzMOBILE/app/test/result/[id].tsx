@@ -27,6 +27,7 @@ interface TestResultDetail {
     questionText: string;
     options: string[];
     correctOptionIndex: number;
+    isOpenQuestion?: boolean;
   }>;
   answers: Array<{
     questionId: string;
@@ -39,13 +40,21 @@ interface TestResultDetail {
     pointsEarned: number;
     totalPoints: number;
     AnswerText: string;
+    isOpenQuestion?: boolean;
   }>;
+}
+
+interface LocalAnswer {
+  questionId: string;
+  selectedOptionIndex?: number;
+  answerText?: string;
+  isOpenQuestion: boolean;
 }
 
 export default function TestResultDetailScreen() {
   const params = useLocalSearchParams();
   const [result, setResult] = useState<TestResultDetail | null>(null);
-  const [localAnswers, setLocalAnswers] = useState<number[]>([]);
+  const [localAnswers, setLocalAnswers] = useState<LocalAnswer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const tintColor = useThemeColor({}, "tint");
@@ -102,21 +111,46 @@ export default function TestResultDetailScreen() {
     if (result?.answers && result.answers.length > 0) {
       const question = result.questions[questionIndex];
       return result.answers.find((a) => a.questionId === question.questionId);
-    } else if (localAnswers.length > questionIndex) {
+    } else if (localAnswers.length > 0) {
       const question = result?.questions[questionIndex];
       if (!question) return null;
 
-      const selectedOptionIndex = localAnswers[questionIndex];
-      const isCorrect = selectedOptionIndex === question.correctOptionIndex;
+      const localAnswer = localAnswers.find(
+        (a) => a.questionId === question.questionId
+      );
 
-      return {
-        questionId: question.questionId,
-        selectedOptionIndex,
-        correctOptionIndex: question.correctOptionIndex,
-        isCorrect,
-        AnswerText: question.options[selectedOptionIndex] || "",
-        options: question.options,
-      };
+      if (!localAnswer) return null;
+
+      // Для закрытых вопросов
+      if (
+        !localAnswer.isOpenQuestion &&
+        localAnswer.selectedOptionIndex !== undefined
+      ) {
+        const selectedOptionIndex = localAnswer.selectedOptionIndex;
+        const isCorrect = selectedOptionIndex === question.correctOptionIndex;
+
+        return {
+          questionId: question.questionId,
+          selectedOptionIndex,
+          correctOptionIndex: question.correctOptionIndex,
+          isCorrect,
+          AnswerText: question.options[selectedOptionIndex] || "",
+          options: question.options,
+          isOpenQuestion: false,
+        };
+      }
+      // Для открытых вопросов
+      else if (localAnswer.isOpenQuestion) {
+        return {
+          questionId: question.questionId,
+          selectedOptionIndex: -1, // Специальное значение для открытых вопросов
+          correctOptionIndex: -1,
+          isCorrect: false, // Не проверяем открытые вопросы автоматически
+          AnswerText: localAnswer.answerText || "",
+          options: [],
+          isOpenQuestion: true,
+        };
+      }
     }
     return null;
   };
@@ -208,6 +242,39 @@ export default function TestResultDetailScreen() {
 
               if (!answer) return null;
 
+              // Для открытых вопросов показываем текстовый ответ
+              if (answer.isOpenQuestion) {
+                return (
+                  <ThemedView
+                    key={question.questionId}
+                    style={[
+                      styles.questionCard,
+                      { backgroundColor: cardBackgroundColor },
+                    ]}
+                  >
+                    <ThemedView style={styles.questionHeader}>
+                      <ThemedText style={styles.questionNumber}>
+                        {translations.question} {index + 1} (Открытый вопрос)
+                      </ThemedText>
+                    </ThemedView>
+
+                    <ThemedText style={styles.questionText}>
+                      {question.questionText}
+                    </ThemedText>
+
+                    <ThemedView style={styles.openAnswerContainer}>
+                      <ThemedText style={styles.answerLabel}>
+                        Ваш ответ:
+                      </ThemedText>
+                      <ThemedText style={styles.openAnswerText}>
+                        {answer.AnswerText || "Нет ответа"}
+                      </ThemedText>
+                    </ThemedView>
+                  </ThemedView>
+                );
+              }
+
+              // Для закрытых вопросов
               return (
                 <ThemedView
                   key={question.questionId}
@@ -261,6 +328,7 @@ export default function TestResultDetailScreen() {
                       let icon = null;
 
                       if (isCorrect) {
+                        // Правильный ответ - зеленый
                         optionStyle = styles.correctOption;
                         circleStyle = styles.correctOptionCircle;
                         textStyle = styles.correctOptionText;
@@ -272,6 +340,7 @@ export default function TestResultDetailScreen() {
                           />
                         );
                       } else if (isSelected) {
+                        // Выбранный НЕправильный ответ - синий
                         optionStyle = styles.selectedOption;
                         circleStyle = styles.selectedOptionCircle;
                         textStyle = styles.selectedOptionText;
@@ -279,10 +348,11 @@ export default function TestResultDetailScreen() {
                           <Ionicons
                             name="close-circle"
                             size={24}
-                            color="#C62828"
+                            color="#2196F3" // Синий цвет вместо красного
                           />
                         );
                       } else if (isIncorrectOption) {
+                        // НЕ выбранный и НЕ правильный - красный
                         optionStyle = styles.incorrectOption;
                         circleStyle = styles.incorrectOptionCircle;
                         textStyle = styles.incorrectOptionText;
@@ -290,10 +360,11 @@ export default function TestResultDetailScreen() {
                           <Ionicons
                             name="close-circle"
                             size={24}
-                            color="#C62828"
+                            color="#C62828" // Красный цвет
                           />
                         );
                       } else {
+                        // Обычный вариант (не должен срабатывать)
                         optionStyle = {};
                         circleStyle = {};
                         textStyle = {};
@@ -337,7 +408,7 @@ export default function TestResultDetailScreen() {
                           <Ionicons
                             name="close-circle"
                             size={20}
-                            color="#C62828"
+                            color="#2196F3" // Синий цвет
                           />
                           <ThemedText style={styles.answerSummaryLabelText}>
                             {translations.yourAnswer}:
@@ -346,7 +417,7 @@ export default function TestResultDetailScreen() {
                         <ThemedText
                           style={[
                             styles.answerSummaryValue,
-                            { color: "#C62828" },
+                            { color: "#2196F3" }, // Синий цвет
                           ]}
                         >
                           {String.fromCharCode(65 + answer.selectedOptionIndex)}
@@ -545,37 +616,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#212121",
   },
-  incorrectOption: {
-    borderColor: "#C62828",
-    backgroundColor: "#FFEBEE",
-  },
-  correctOption: {
-    borderColor: "#2E7D32",
-    backgroundColor: "#E8F5E9",
-  },
+  // Стили для выбранного НЕправильного ответа (синий)
   selectedOption: {
     backgroundColor: "#E3F2FD",
     borderColor: "#2196F3",
   },
-  incorrectOptionCircle: {
-    backgroundColor: "#C62828",
-  },
-  correctOptionCircle: {
-    backgroundColor: "#2E7D32",
-  },
   selectedOptionCircle: {
     backgroundColor: "#2196F3",
   },
-  incorrectOptionText: {
-    color: "#C62828",
+  selectedOptionText: {
+    color: "#2196F3",
     fontWeight: "600",
+  },
+  // Стили для правильного ответа (зеленый)
+  correctOption: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#E8F5E9",
+  },
+  correctOptionCircle: {
+    backgroundColor: "#2E7D32",
   },
   correctOptionText: {
     color: "#2E7D32",
     fontWeight: "600",
   },
-  selectedOptionText: {
-    color: "#2196F3",
+  // Стили для НЕ выбранного и НЕ правильного ответа (красный)
+  incorrectOption: {
+    borderColor: "#C62828",
+    backgroundColor: "#FFEBEE",
+  },
+  incorrectOptionCircle: {
+    backgroundColor: "#C62828",
+  },
+  incorrectOptionText: {
+    color: "#C62828",
     fontWeight: "600",
   },
   optionIndicator: {
@@ -609,5 +683,23 @@ const styles = StyleSheet.create({
   answerSummaryValue: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Стили для открытых вопросов
+  openAnswerContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+  },
+  answerLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#757575",
+    marginBottom: 8,
+  },
+  openAnswerText: {
+    fontSize: 16,
+    color: "#212121",
+    lineHeight: 22,
   },
 });

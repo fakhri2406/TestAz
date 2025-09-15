@@ -11,13 +11,23 @@ import { translations } from '@/constants/translations';
 import { api } from '@/services/api';
 import { useRouter } from 'expo-router';
 
-interface Question {
+interface ClosedQuestion {
+  type: 'closed';
   text: string;
   options: Array<{
     text: string;
     isCorrect: boolean;
   }>;
 }
+
+interface OpenQuestion {
+  type: 'open';
+  text: string;
+  correctAnswer: string;
+  points: number;
+}
+
+type Question = ClosedQuestion | OpenQuestion;
 
 export default function NewTestScreen() {
   const [title, setTitle] = useState('');
@@ -29,12 +39,13 @@ export default function NewTestScreen() {
   const tintColor = useThemeColor({}, 'tint');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
-  const cardBackgroundColor = useThemeColor({}, 'card');
+  const cardBackgroundColor = useThemeColor({}, 'background');
 
-  const addQuestion = () => {
+  const addClosedQuestion = () => {
     setQuestions([
       ...questions,
       {
+        type: 'closed',
         text: '',
         options: [
           { text: '', isCorrect: false },
@@ -46,25 +57,57 @@ export default function NewTestScreen() {
     ]);
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const addOpenQuestion = () => {
+    setQuestions([
+      ...questions,
+      {
+        type: 'open',
+        text: '',
+        correctAnswer: '',
+        points: 1
+      }
+    ]);
+  };
+
+  const updateClosedQuestion = (index: number, field: keyof ClosedQuestion, value: any) => {
     const newQuestions = [...questions];
-    if (field === 'text') {
-      newQuestions[index].text = value;
+    if (newQuestions[index].type === 'closed') {
+      if (field === 'text') {
+        newQuestions[index].text = value;
+      }
+      setQuestions(newQuestions);
     }
-    setQuestions(newQuestions);
+  };
+
+  const updateOpenQuestion = (index: number, field: keyof OpenQuestion, value: any) => {
+    const newQuestions = [...questions];
+    if (newQuestions[index].type === 'open') {
+      const openQuestion = newQuestions[index] as OpenQuestion;
+      if (field === 'text') {
+        openQuestion.text = value;
+      } else if (field === 'correctAnswer') {
+        openQuestion.correctAnswer = value;
+      } else if (field === 'points') {
+        openQuestion.points = value;
+      }
+      setQuestions(newQuestions);
+    }
   };
 
   const updateOption = (questionIndex: number, optionIndex: number, field: 'text' | 'isCorrect', value: any) => {
     const newQuestions = [...questions];
-    if (field === 'text') {
-      newQuestions[questionIndex].options[optionIndex].text = value;
-    } else if (field === 'isCorrect') {
-      // Set all options to false first
-      newQuestions[questionIndex].options.forEach(opt => opt.isCorrect = false);
-      // Then set the selected option to true
-      newQuestions[questionIndex].options[optionIndex].isCorrect = value;
+    if (newQuestions[questionIndex].type === 'closed') {
+      const closedQuestion = newQuestions[questionIndex] as ClosedQuestion;
+      if (field === 'text') {
+        closedQuestion.options[optionIndex].text = value;
+      } else if (field === 'isCorrect') {
+        // Set all options to false first
+        closedQuestion.options.forEach(opt => opt.isCorrect = false);
+        // Then set the selected option to true
+        closedQuestion.options[optionIndex].isCorrect = value;
+      }
+      setQuestions(newQuestions);
     }
-    setQuestions(newQuestions);
   };
 
   const removeQuestion = (index: number) => {
@@ -84,36 +127,157 @@ export default function NewTestScreen() {
         return;
       }
 
-      const invalidQuestions = questions.some(q => 
-        !q.text.trim() || 
-        q.options.some(opt => !opt.text.trim()) ||
-        !q.options.some(opt => opt.isCorrect)
-      );
+      // Validate closed questions
+      const invalidClosedQuestions = questions.some(q => {
+        if (q.type === 'closed') {
+          return !q.text.trim() || 
+                 q.options.some(opt => !opt.text.trim()) ||
+                 !q.options.some(opt => opt.isCorrect);
+        }
+        return false;
+      });
 
-      if (invalidQuestions) {
+      // Validate open questions
+      const invalidOpenQuestions = questions.some(q => {
+        if (q.type === 'open') {
+          return !q.text.trim() || !q.correctAnswer.trim() || q.points <= 0;
+        }
+        return false;
+      });
+
+      if (invalidClosedQuestions) {
         Alert.alert(translations.error, translations.pleaseFillQuestionsCorrectly);
         return;
       }
 
+      if (invalidOpenQuestions) {
+        Alert.alert(translations.error, 'Zəhmət olmasa bütün açıq sualları düzgün cavab və xallarla doldurun');
+        return;
+      }
+
+      // Separate closed and open questions
+      const closedQuestions = questions.filter(q => q.type === 'closed') as ClosedQuestion[];
+      const openQuestions = questions.filter(q => q.type === 'open') as OpenQuestion[];
+
+      // Create test with closed questions first
       const testData = {
         title,
         description,
         isPremium,
-        questions: questions.map(q => ({
+        questions: closedQuestions.map(q => ({
           text: q.text,
           options: q.options
         }))
       };
 
-      await api.createTest(testData);
+      const createdTest = await api.createTest(testData);
+      
+      // Add open questions to the created test
+      if (openQuestions.length > 0 && createdTest.id) {
+        for (const openQ of openQuestions) {
+          await api.addOpenQuestion(createdTest.id, {
+            text: openQ.text,
+            correctAnswer: openQ.correctAnswer,
+            points: openQ.points
+          });
+        }
+      }
+
       Alert.alert(translations.success, translations.testCreated, [
         { text: translations.ok, onPress: () => router.back() }
       ]);
     } catch (error) {
-      console.error('Error creating test:', error);
+      console.error('Test yaratma xətası:', error);
       Alert.alert(translations.error, translations.failedToCreate);
     }
   };
+
+  const renderClosedQuestion = (question: ClosedQuestion, qIndex: number) => (
+    <ThemedView key={qIndex} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+      <ThemedView style={styles.questionHeader}>
+        <ThemedText style={styles.questionNumber}>{translations.question} {qIndex + 1} (Bağlı)</ThemedText>
+      </ThemedView>
+      
+      <ThemedTextInput
+        style={styles.input}
+        placeholder={translations.questionText}
+        value={question.text}
+        onChangeText={(text) => updateClosedQuestion(qIndex, 'text', text)}
+      />
+
+      {question.options.map((option, oIndex) => (
+        <ThemedView key={oIndex} style={[styles.optionContainer, { backgroundColor: cardBackgroundColor }]}>
+          <ThemedTextInput
+            style={styles.optionInput}
+            placeholder={translations.option + ' ' + (oIndex + 1)}
+            value={option.text}
+            onChangeText={(text) => updateOption(qIndex, oIndex, 'text', text)}
+          />
+          <TouchableOpacity
+            style={[
+              styles.correctButton,
+              option.isCorrect && styles.correctButtonActive
+            ]}
+            onPress={() => updateOption(qIndex, oIndex, 'isCorrect', true)}
+          >
+            <ThemedText style={[
+              styles.correctButtonText,
+              option.isCorrect && styles.correctButtonTextActive
+            ]}>
+              {option.isCorrect ? translations.correct : translations.markAsCorrect}
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      ))}
+
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => removeQuestion(qIndex)}
+      >
+        <ThemedText style={styles.removeButtonText}>{translations.removeQuestion}</ThemedText>
+      </TouchableOpacity>
+    </ThemedView>
+  );
+
+  const renderOpenQuestion = (question: OpenQuestion, qIndex: number) => (
+    <ThemedView key={qIndex} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+      <ThemedView style={styles.questionHeader}>
+        <ThemedText style={styles.questionNumber}>{translations.question} {qIndex + 1} (Açıq)</ThemedText>
+      </ThemedView>
+      
+      <ThemedTextInput
+        style={styles.input}
+        placeholder={translations.questionText}
+        value={question.text}
+        onChangeText={(text) => updateOpenQuestion(qIndex, 'text', text)}
+      />
+
+      <ThemedTextInput
+        style={styles.input}
+        placeholder="Düzgün cavab"
+        value={question.correctAnswer}
+        onChangeText={(text) => updateOpenQuestion(qIndex, 'correctAnswer', text)}
+      />
+
+      <ThemedView style={styles.pointsContainer}>
+        <ThemedText style={styles.pointsLabel}>Suala görə xallar:</ThemedText>
+        <ThemedTextInput
+          style={styles.pointsInput}
+          placeholder="1"
+          value={question.points.toString()}
+          onChangeText={(text) => updateOpenQuestion(qIndex, 'points', parseInt(text) || 1)}
+          keyboardType="numeric"
+        />
+      </ThemedView>
+
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => removeQuestion(qIndex)}
+      >
+        <ThemedText style={styles.removeButtonText}>{translations.removeQuestion}</ThemedText>
+      </TouchableOpacity>
+    </ThemedView>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -155,59 +319,33 @@ export default function NewTestScreen() {
             />
           </ThemedView>
 
-          {questions.map((question, qIndex) => (
-            <ThemedView key={qIndex} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
-              <ThemedText style={styles.questionNumber}>{translations.question} {qIndex + 1}</ThemedText>
-              
-              <ThemedTextInput
-                style={styles.input}
-                placeholder={translations.questionText}
-                value={question.text}
-                onChangeText={(text) => updateQuestion(qIndex, 'text', text)}
-              />
+          {questions.map((question, qIndex) => {
+            if (question.type === 'closed') {
+              return renderClosedQuestion(question as ClosedQuestion, qIndex);
+            } else {
+              return renderOpenQuestion(question as OpenQuestion, qIndex);
+            }
+          })}
 
-              {question.options.map((option, oIndex) => (
-                <ThemedView key={oIndex} style={[styles.optionContainer, { backgroundColor: cardBackgroundColor }]}>
-                  <ThemedTextInput
-                    style={styles.optionInput}
-                    placeholder={translations.option + ' ' + (oIndex + 1)}
-                    value={option.text}
-                    onChangeText={(text) => updateOption(qIndex, oIndex, 'text', text)}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.correctButton,
-                      option.isCorrect && styles.correctButtonActive
-                    ]}
-                    onPress={() => updateOption(qIndex, oIndex, 'isCorrect', true)}
-                  >
-                    <ThemedText style={[
-                      styles.correctButtonText,
-                      option.isCorrect && styles.correctButtonTextActive
-                    ]}>
-                      {option.isCorrect ? translations.correct : translations.markCorrect}
-                    </ThemedText>
-                  </TouchableOpacity>
-                </ThemedView>
-              ))}
+          <ThemedView style={styles.addQuestionButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.addQuestionButton, { backgroundColor: cardBackgroundColor, marginRight: 8 }]}
+              onPress={addClosedQuestion}
+            >
+              <ThemedText style={[styles.addQuestionText, { color: tintColor }]}>
+                + Bağlı sual
+              </ThemedText>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeQuestion(qIndex)}
-              >
-                <ThemedText style={styles.removeButtonText}>{translations.removeQuestion}</ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-          ))}
-
-          <TouchableOpacity
-            style={[styles.addQuestionButton, { backgroundColor: cardBackgroundColor }]}
-            onPress={addQuestion}
-          >
-            <ThemedText style={[styles.addQuestionText, { color: tintColor }]}>
-              {translations.addQuestion}
-            </ThemedText>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.addQuestionButton, { backgroundColor: cardBackgroundColor, marginLeft: 8 }]}
+              onPress={addOpenQuestion}
+            >
+              <ThemedText style={[styles.addQuestionText, { color: tintColor }]}>
+                + Açıq sual
+              </ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
         </ScrollView>
 
         <TouchableOpacity
@@ -259,10 +397,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   questionNumber: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
   },
   optionContainer: {
     flexDirection: 'row',
@@ -277,18 +420,21 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  addQuestionButtonsContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
   addQuestionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
     borderRadius: 8,
-    marginBottom: 16,
   },
   addQuestionText: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
   submitButton: {
     padding: 16,
@@ -333,9 +479,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#dc3545',
     padding: 8,
     borderRadius: 4,
+    marginTop: 8,
   },
   removeButtonText: {
     color: '#fff',
     fontSize: 14,
+    textAlign: 'center',
   },
-}); 
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pointsLabel: {
+    fontSize: 16,
+    marginRight: 12,
+  },
+  pointsInput: {
+    width: 80,
+    padding: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+});

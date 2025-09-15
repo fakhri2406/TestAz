@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import {
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+} from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +27,24 @@ interface Question {
   text: string;
   options: Option[];
   correctOptionIndex: number;
+  type: number;
+}
+
+interface OpenQuestion {
+  id: string;
+  text: string;
+  points: number;
+  correctAnswer: string;
+}
+
+interface TestData {
+  test?: {
+    id: string;
+    title: string;
+    description: string;
+    questions?: Question[];
+  };
+  openQuestions?: OpenQuestion[];
 }
 
 interface Test {
@@ -28,16 +52,50 @@ interface Test {
   title: string;
   description: string;
   questions: Question[];
+  openQuestions: OpenQuestion[];
+}
+
+interface UserAnswer {
+  questionId: string;
+  selectedOptionIndex?: number;
+  answerText?: string;
+  isOpenQuestion: boolean;
+}
+
+interface ApiAnswer {
+  questionId: string;
+  selectedOptionIndex: number;
+  correctOptionIndex: number;
+}
+
+interface TestSolution {
+  testId: string;
+  score: number;
+  scoreString: string;
+  totalQuestions: number;
+  correctAnswers: number;
+  answers: ApiAnswer[];
+  questions: {
+    questionId: string;
+    correctOptionIndex: number;
+  }[];
 }
 
 const saveAnswerLocally = async (
   questionId: string,
-  selectedOptionIndex: number
+  answer: number | string,
+  isOpenQuestion: boolean
 ) => {
   try {
     const storedAnswers = await AsyncStorage.getItem("userAnswers");
     let answers = storedAnswers ? JSON.parse(storedAnswers) : {};
-    answers[questionId] = selectedOptionIndex;
+
+    if (isOpenQuestion) {
+      answers[questionId] = { text: answer, isOpen: true };
+    } else {
+      answers[questionId] = { optionIndex: answer, isOpen: false };
+    }
+
     await AsyncStorage.setItem("userAnswers", JSON.stringify(answers));
   } catch (error) {
     console.error("Error saving answer locally:", error);
@@ -67,7 +125,10 @@ export default function TakeTestScreen() {
   const { id } = useLocalSearchParams();
   const [test, setTest] = useState<Test | null>(null);
   const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [closedQuestionAnswers, setClosedQuestionAnswers] = useState<number[]>(
+    []
+  );
+  const [openQuestionAnswers, setOpenQuestionAnswers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const tintColor = useThemeColor({}, "tint");
@@ -78,9 +139,16 @@ export default function TakeTestScreen() {
     loadTest();
   }, [id]);
 
+  // Загружаем сохраненные ответы после того как тест загружен
+  useEffect(() => {
+    if (test) {
+      loadSavedAnswers();
+    }
+  }, [test]);
+
   const saveTestAnswers = async (
     testId: string,
-    answers: number[],
+    answers: UserAnswer[],
     resultId: string
   ) => {
     try {
@@ -100,46 +168,78 @@ export default function TakeTestScreen() {
     }
   };
 
+  const loadSavedAnswers = async () => {
+    try {
+      const storedAnswers = await loadLocalAnswers();
+
+      // Загружаем ответы на закрытые вопросы
+      const loadedClosedAnswers = test!.questions.map((q) => {
+        const saved = storedAnswers[q.id];
+        return saved && !saved.isOpen ? saved.optionIndex : -1;
+      });
+      setClosedQuestionAnswers(loadedClosedAnswers);
+
+      // Загружаем ответы на открытые вопросы
+      const loadedOpenAnswers = test!.openQuestions.map((q) => {
+        const saved = storedAnswers[q.id];
+        return saved && saved.isOpen ? saved.text : "";
+      });
+      setOpenQuestionAnswers(loadedOpenAnswers);
+
+      console.log("Loaded saved answers:", {
+        closed: loadedClosedAnswers,
+        open: loadedOpenAnswers,
+      });
+    } catch (err) {
+      console.error("Error loading saved answers:", err);
+    }
+  };
+
   const loadTest = async () => {
     try {
       setLoading(true);
-      
+
       await clearLocalAnswers();
-      
-      const testData = await api.getTest(id as string);
+
+      const testData: TestData = await api.getTest(id as string);
       console.log("Raw test data:", JSON.stringify(testData, null, 2));
 
+      const formattedClosedQuestions = Array.isArray(testData.test?.questions)
+        ? testData.test.questions.map((q: Question) => {
+            const orderedOptions = [...q.options].sort(
+              (a: Option, b: Option) =>
+                (a.orderIndex || 0) - (b.orderIndex || 0)
+            );
+            const correctOptionIndex = orderedOptions.findIndex(
+              (opt: Option) => opt.isCorrect
+            );
+
+            return {
+              id: q.id || "",
+              text: q.text || "",
+              options: orderedOptions,
+              correctOptionIndex:
+                correctOptionIndex >= 0 ? correctOptionIndex : -1,
+              type: q.type || 0,
+            };
+          })
+        : [];
+
+      const formattedOpenQuestions = Array.isArray(testData.openQuestions)
+        ? testData.openQuestions.map((oq: OpenQuestion) => ({
+            id: oq.id || "",
+            text: oq.text || "",
+            points: oq.points || 1,
+            correctAnswer: oq.correctAnswer || "",
+          }))
+        : [];
+
       const formattedTest: Test = {
-        id: testData.id || "",
-        title: testData.title || "",
-        description: testData.description || "",
-        questions: Array.isArray(testData.questions)
-          ? testData.questions.map((q) => {
-              console.log("Processing question:", {
-                id: q.id,
-                text: q.text,
-                options: q.options,
-              });
-
-              const orderedOptions = [...q.options].sort(
-                (a, b) => a.orderIndex - b.orderIndex
-              );
-              const correctOptionIndex =
-                orderedOptions.findIndex((opt) => opt.isCorrect) >= 0
-                  ? orderedOptions.findIndex((opt) => opt.isCorrect)
-                  : -1;
-
-              const formattedQuestion = {
-                id: q.id || "",
-                text: q.text || "",
-                options: orderedOptions,
-                correctOptionIndex: correctOptionIndex,
-              };
-
-              console.log("Formatted question:", formattedQuestion);
-              return formattedQuestion;
-            })
-          : [],
+        id: testData.test?.id || "",
+        title: testData.test?.title || "",
+        description: testData.test?.description || "",
+        questions: formattedClosedQuestions,
+        openQuestions: formattedOpenQuestions,
       };
 
       console.log(
@@ -147,10 +247,15 @@ export default function TakeTestScreen() {
         JSON.stringify(formattedTest, null, 2)
       );
       setTest(formattedTest);
-      
-      // Устанавливаем пустые ответы (-1 означает "не выбрано")
-      const initialAnswers = Array(formattedTest.questions.length).fill(-1);
-      setAnswers(initialAnswers);
+
+      // Инициализируем пустые ответы
+      const initialClosedAnswers = Array(formattedClosedQuestions.length).fill(
+        -1
+      );
+      const initialOpenAnswers = Array(formattedOpenQuestions.length).fill("");
+
+      setClosedQuestionAnswers(initialClosedAnswers);
+      setOpenQuestionAnswers(initialOpenAnswers);
     } catch (error) {
       console.error("Error loading test:", error);
       Alert.alert(translations.error, translations.failedToLoadTest);
@@ -160,14 +265,43 @@ export default function TakeTestScreen() {
     }
   };
 
-  const handleAnswerSelect = (questionIndex: number, optionIndex: number) => {
-    const newAnswers = [...answers];
+  const handleClosedAnswerSelect = async (
+    questionIndex: number,
+    optionIndex: number
+  ) => {
+    const newAnswers = [...closedQuestionAnswers];
     newAnswers[questionIndex] = optionIndex;
-    setAnswers(newAnswers);
+    setClosedQuestionAnswers(newAnswers);
+
+    if (test) {
+      await saveAnswerLocally(
+        test.questions[questionIndex].id,
+        optionIndex,
+        false
+      );
+    }
+  };
+
+  const handleOpenAnswerChange = async (
+    questionIndex: number,
+    text: string
+  ) => {
+    const newAnswers = [...openQuestionAnswers];
+    newAnswers[questionIndex] = text;
+    setOpenQuestionAnswers(newAnswers);
+
+    if (test) {
+      await saveAnswerLocally(test.openQuestions[questionIndex].id, text, true);
+    }
   };
 
   const handleSubmit = async () => {
-    if (answers.some((answer) => answer === -1)) {
+    if (closedQuestionAnswers.some((answer) => answer === -1)) {
+      Alert.alert(translations.warning, translations.answerAllQuestions);
+      return;
+    }
+
+    if (openQuestionAnswers.some((answer) => answer.trim() === "")) {
       Alert.alert(translations.warning, translations.answerAllQuestions);
       return;
     }
@@ -180,43 +314,49 @@ export default function TakeTestScreen() {
     try {
       setSubmitting(true);
 
+      const apiAnswers: ApiAnswer[] = [];
+
+      closedQuestionAnswers.forEach((selectedOptionIndex, index) => {
+        const question = test.questions[index];
+        apiAnswers.push({
+          questionId: question.id,
+          selectedOptionIndex,
+          correctOptionIndex: question.correctOptionIndex,
+        });
+      });
+
+      openQuestionAnswers.forEach((answerText, index) => {
+        const question = test.openQuestions[index];
+        apiAnswers.push({
+          questionId: question.id,
+          selectedOptionIndex: -2,
+          correctOptionIndex: -2,
+        });
+      });
+
       const correctAnswersCount = test.questions.reduce(
         (count, question, index) =>
-          count + (answers[index] === question.correctOptionIndex ? 1 : 0),
+          count +
+          (closedQuestionAnswers[index] === question.correctOptionIndex
+            ? 1
+            : 0),
         0
       );
 
-      const totalQuestions = test.questions.length;
-      const score = Math.round((correctAnswersCount / totalQuestions) * 100);
+      const score = Math.round(
+        (correctAnswersCount / test.questions.length) * 100
+      );
 
-      const submissionAnswers = answers.map((selectedOptionIndex, index) => {
-        const question = test.questions[index];
-        const correctOptionIndex = question.correctOptionIndex;
-
-        return {
-          questionId: question.id,
-          questionText: question.text,
-          selectedOptionIndex,
-          correctOptionIndex,
-          options: question.options.map((opt) => opt.text),
-          isCorrect: selectedOptionIndex === correctOptionIndex,
-          correctOption: question.options[correctOptionIndex]?.text || "",
-          AnswerText: question.options[selectedOptionIndex]?.text || "",
-        };
-      });
-
-      const solution = {
+      const solution: TestSolution = {
         testId: test.id,
         score,
-        scoreString: `${correctAnswersCount}/${totalQuestions}`,
-        totalQuestions,
+        scoreString: `${correctAnswersCount}/${test.questions.length}`,
+        totalQuestions: test.questions.length,
         correctAnswers: correctAnswersCount,
-        answers: submissionAnswers,
+        answers: apiAnswers,
         questions: test.questions.map((q) => ({
           questionId: q.id,
-          questionText: q.text,
           correctOptionIndex: q.correctOptionIndex,
-          options: q.options.map((opt) => opt.text),
         })),
       };
 
@@ -234,7 +374,23 @@ export default function TakeTestScreen() {
             )}-${formattedId.slice(20)}`
           : formattedId;
 
-      await saveTestAnswers(test.id, answers, guidFormat);
+      const userAnswers: UserAnswer[] = [];
+      closedQuestionAnswers.forEach((selectedOptionIndex, index) => {
+        userAnswers.push({
+          questionId: test.questions[index].id,
+          selectedOptionIndex,
+          isOpenQuestion: false,
+        });
+      });
+      openQuestionAnswers.forEach((answerText, index) => {
+        userAnswers.push({
+          questionId: test.openQuestions[index].id,
+          answerText,
+          isOpenQuestion: true,
+        });
+      });
+
+      await saveTestAnswers(test.id, userAnswers, guidFormat);
 
       router.push(`/test/result/${guidFormat}`);
     } catch (error) {
@@ -252,6 +408,8 @@ export default function TakeTestScreen() {
       </ThemedView>
     );
   }
+
+  const totalQuestions = test.questions.length + test.openQuestions.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -282,7 +440,8 @@ export default function TakeTestScreen() {
               ]}
             >
               <ThemedText style={styles.questionNumber}>
-                {translations.question} {questionIndex + 1}
+                {translations.question} {questionIndex + 1} (
+                {translations.multipleChoice})
               </ThemedText>
               <ThemedText style={styles.questionText}>
                 {question.text}
@@ -293,19 +452,18 @@ export default function TakeTestScreen() {
                   key={optionIndex}
                   style={[
                     styles.optionContainer,
-                    answers[questionIndex] === optionIndex && {
+                    closedQuestionAnswers[questionIndex] === optionIndex && {
                       borderColor: tintColor,
                     },
                   ]}
                   onPress={async () => {
-                    handleAnswerSelect(questionIndex, optionIndex);
-                    await saveAnswerLocally(question.id, optionIndex);
+                    await handleClosedAnswerSelect(questionIndex, optionIndex);
                   }}
                 >
                   <ThemedText style={styles.optionText}>
                     {option.text}
                   </ThemedText>
-                  {answers[questionIndex] === optionIndex && (
+                  {closedQuestionAnswers[questionIndex] === optionIndex && (
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
@@ -314,6 +472,36 @@ export default function TakeTestScreen() {
                   )}
                 </TouchableOpacity>
               ))}
+            </ThemedView>
+          ))}
+
+          {test.openQuestions.map((question, questionIndex) => (
+            <ThemedView
+              key={question.id}
+              style={[
+                styles.questionCard,
+                { backgroundColor: cardBackgroundColor },
+              ]}
+            >
+              <ThemedText style={styles.questionNumber}>
+                {translations.question}{" "}
+                {test.questions.length + questionIndex + 1} (
+                {translations.openQuestion})
+              </ThemedText>
+              <ThemedText style={styles.questionText}>
+                {question.text}
+              </ThemedText>
+
+              <TextInput
+                style={[styles.textInput, { borderColor: tintColor }]}
+                multiline
+                numberOfLines={4}
+                placeholder={translations.typeYourAnswer}
+                value={openQuestionAnswers[questionIndex]}
+                onChangeText={async (text) => {
+                  await handleOpenAnswerChange(questionIndex, text);
+                }}
+              />
             </ThemedView>
           ))}
         </ScrollView>
@@ -326,7 +514,9 @@ export default function TakeTestScreen() {
           <ThemedText
             style={[styles.submitButtonText, { color: backgroundColor }]}
           >
-            {submitting ? translations.submitting : translations.submitTest}
+            {submitting
+              ? translations.submitting
+              : `${translations.submitTest} (${totalQuestions} ${translations.questions})`}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -397,6 +587,14 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 16,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
   },
   submitButton: {
     margin: 16,

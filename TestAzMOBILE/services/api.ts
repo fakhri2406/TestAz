@@ -1,26 +1,27 @@
-import { API_CONFIG } from '../config/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiService } from './apiService';
-import axios from 'axios';
+import { API_CONFIG } from "../config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiService } from "./apiService";
+import axios from "axios";
 
 // API Response type
 interface ApiResponse<T> {
-    data?: T;
-    error?: string;
-    status: number;
+  id: any;
+  data?: T;
+  error?: string;
+  status: number;
 }
 
 // API Error type
 class ApiError extends Error {
-    status: number;
-    responseData?: any;
-    
-    constructor(message: string, status: number, responseData?: any) {
-        super(message);
-        this.status = status;
-        this.responseData = responseData;
-        this.name = 'ApiError';
-    }
+  status: number;
+  responseData?: any;
+
+  constructor(message: string, status: number, responseData?: any) {
+    super(message);
+    this.status = status;
+    this.responseData = responseData;
+    this.name = "ApiError";
+  }
 }
 
 interface LoginRequest {
@@ -38,6 +39,16 @@ interface SignupRequest {
 interface VerifyCodeRequest {
   email: string;
   code: string;
+}
+
+interface OpenQuestion {
+  id: string;
+  testId: string;
+  text: string;
+  correctAnswer: string;
+  points: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthResponse {
@@ -126,7 +137,7 @@ interface UpgradeRequest {
   id: string;
   userId: string;
   userEmail: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   createdAt: string;
 }
 
@@ -142,13 +153,26 @@ interface PremiumRequest {
   rejectionReason?: string;
 }
 
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    return token;
+  } catch (error) {
+    console.error("Error getting auth token:", error);
+    return null;
+  }
+};
+
 export const api = {
   login: async (credentials: LoginRequest) => {
     try {
-      const response = await apiService.login(credentials.email, credentials.password);
+      const response = await apiService.login(
+        credentials.email,
+        credentials.password
+      );
       return response;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     }
   },
@@ -158,18 +182,18 @@ export const api = {
       const response = await apiService.signup(userData);
       return response;
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error("Signup error:", error);
       throw error;
     }
   },
 
   logout: async (): Promise<void> => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
   },
 
   getCurrentUser: async (): Promise<UserData | null> => {
-    const user = await AsyncStorage.getItem('user');
+    const user = await AsyncStorage.getItem("user");
     return user ? JSON.parse(user) : null;
   },
 
@@ -177,11 +201,11 @@ export const api = {
     try {
       const userData = await apiService.getUserById(id);
       if (!userData) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
       return userData;
     } catch (error) {
-      console.error('Error in getUserById:', error);
+      console.error("Error in getUserById:", error);
       throw error;
     }
   },
@@ -191,17 +215,17 @@ export const api = {
       const response = await apiService.getTests();
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error('Get tests error:', error);
+      console.error("Get tests error:", error);
       throw error;
     }
   },
 
-  getTest: async (id: string) => {
+  getTest: async (id: string): Promise<any> => {
     try {
       const response = await apiService.getTest(id);
       return response;
     } catch (error) {
-      console.error('Get test error:', error);
+      console.error("Get test error:", error);
       throw error;
     }
   },
@@ -222,7 +246,7 @@ export const api = {
       const response = await apiService.createTest(testData);
       return response;
     } catch (error) {
-      console.error('Create test error:', error);
+      console.error("Create test error:", error);
       throw error;
     }
   },
@@ -231,17 +255,19 @@ export const api = {
     try {
       await apiService.deleteTest(id);
     } catch (error) {
-      console.error('Delete test error:', error);
+      console.error("Delete test error:", error);
       throw error;
     }
   },
 
-  submitTestSolution: async (solution: TestSolution): Promise<TestSolutionResponse> => {
+  submitTestSolution: async (
+    solution: TestSolution
+  ): Promise<TestSolutionResponse> => {
     try {
       const response = await apiService.submitTestSolution(solution);
       return response;
     } catch (error) {
-      console.error('Submit test solution error:', error);
+      console.error("Submit test solution error:", error);
       throw error;
     }
   },
@@ -251,7 +277,7 @@ export const api = {
       const results = await apiService.getTestResults(userId);
       return Array.isArray(results) ? results : [];
     } catch (error) {
-      console.error('Get test results error:', error);
+      console.error("Get test results error:", error);
       throw error;
     }
   },
@@ -261,7 +287,7 @@ export const api = {
       const response = await apiService.getTestResultDetail(id);
       return response;
     } catch (error) {
-      console.error('Get test result detail error:', error);
+      console.error("Get test result detail error:", error);
       throw error;
     }
   },
@@ -272,7 +298,7 @@ export const api = {
       const response = await apiService.getVideoCourses();
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error('Get video courses error:', error);
+      console.error("Get video courses error:", error);
       throw error;
     }
   },
@@ -282,7 +308,7 @@ export const api = {
       const response = await apiService.getVideoCourse(id);
       return response;
     } catch (error) {
-      console.error('Get video course error:', error);
+      console.error("Get video course error:", error);
       throw error;
     }
   },
@@ -298,7 +324,7 @@ export const api = {
       const response = await apiService.createVideoCourse(videoData);
       return response;
     } catch (error) {
-      console.error('Create video course error:', error);
+      console.error("Create video course error:", error);
       throw error;
     }
   },
@@ -307,7 +333,7 @@ export const api = {
     try {
       await apiService.deleteVideoCourse(id);
     } catch (error) {
-      console.error('Delete video course error:', error);
+      console.error("Delete video course error:", error);
       throw error;
     }
   },
@@ -318,16 +344,19 @@ export const api = {
       const response = await apiService.getAllUsers();
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error('Get all users error:', error);
+      console.error("Get all users error:", error);
       throw error;
     }
   },
 
-  updateUserPremiumStatus: async (userId: string, isPremium: boolean): Promise<void> => {
+  updateUserPremiumStatus: async (
+    userId: string,
+    isPremium: boolean
+  ): Promise<void> => {
     try {
       await apiService.updateUserPremiumStatus(userId, isPremium);
     } catch (error) {
-      console.error('Update user premium status error:', error);
+      console.error("Update user premium status error:", error);
       throw error;
     }
   },
@@ -336,7 +365,7 @@ export const api = {
     try {
       await apiService.updateUserRole(userId, role);
     } catch (error) {
-      console.error('Update user role error:', error);
+      console.error("Update user role error:", error);
       throw error;
     }
   },
@@ -346,7 +375,45 @@ export const api = {
       const response = await apiService.resendVerification(data);
       return response;
     } catch (error) {
-      console.error('Resend verification error:', error);
+      console.error("Resend verification error:", error);
+      throw error;
+    }
+  },
+
+  addOpenQuestion: async (
+    testId: string,
+    data: {
+      text: string;
+      correctAnswer: string;
+      points: number;
+    }
+  ) => {
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/api/test/${testId}/open-questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to add open question");
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error("Add open question error:", error);
       throw error;
     }
   },
@@ -356,7 +423,7 @@ export const api = {
       const response = await apiService.verifyCode(data);
       return response;
     } catch (error) {
-      console.error('Verify code error:', error);
+      console.error("Verify code error:", error);
       throw error;
     }
   },
@@ -366,7 +433,7 @@ export const api = {
       const response = await apiService.upgradeToPremium();
       return response;
     } catch (error) {
-      console.error('Upgrade to premium error:', error);
+      console.error("Upgrade to premium error:", error);
       throw error;
     }
   },
@@ -376,7 +443,7 @@ export const api = {
       const response = await apiService.requestPremiumUpgrade();
       return response;
     } catch (error) {
-      console.error('Request premium upgrade error:', error);
+      console.error("Request premium upgrade error:", error);
       throw error;
     }
   },
@@ -386,7 +453,7 @@ export const api = {
       const response = await apiService.getUpgradeRequests();
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error('Get upgrade requests error:', error);
+      console.error("Get upgrade requests error:", error);
       throw error;
     }
   },
@@ -395,7 +462,7 @@ export const api = {
     try {
       await apiService.approveUpgradeRequest(requestId);
     } catch (error) {
-      console.error('Approve upgrade request error:', error);
+      console.error("Approve upgrade request error:", error);
       throw error;
     }
   },
@@ -404,7 +471,7 @@ export const api = {
     try {
       await apiService.rejectUpgradeRequest(requestId);
     } catch (error) {
-      console.error('Reject upgrade request error:', error);
+      console.error("Reject upgrade request error:", error);
       throw error;
     }
   },
@@ -414,21 +481,24 @@ export const api = {
       const response = await apiService.getPremiumRequests();
       return response;
     } catch (error) {
-      console.error('Get premium requests error:', error);
+      console.error("Get premium requests error:", error);
       throw error;
     }
   },
 
-  handlePremiumRequest: async (requestId: string, approve: boolean): Promise<void> => {
+  handlePremiumRequest: async (
+    requestId: string,
+    approve: boolean
+  ): Promise<void> => {
     try {
       if (approve) {
         await apiService.approvePremiumRequest(requestId);
       } else {
-        await apiService.rejectPremiumRequest(requestId, 'Rejected by admin');
+        await apiService.rejectPremiumRequest(requestId, "Rejected by admin");
       }
     } catch (error) {
-      console.error('Handle premium request error:', error);
+      console.error("Handle premium request error:", error);
       throw error;
     }
   },
-}; 
+};
