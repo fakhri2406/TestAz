@@ -31,7 +31,7 @@ const getBaseUrl = () => {
 
 // API configuration
 export const API_CONFIG = {
-    BASE_URL: 'http://161.97.113.120',
+    BASE_URL: 'http://31.220.84.200',
     TIMEOUT: getEnvironment().timeout,
     HEADERS: {
         'Content-Type': 'application/json',
