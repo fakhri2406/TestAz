@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using TestAzAPI.Configuration;
 using DotNetEnv;
+using Microsoft.OpenApi.Models;
 // Load environment variables from .env file
 Env.Load();
 
@@ -17,7 +18,35 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+	options.SwaggerDoc("v1", new OpenApiInfo
+	{
+		Title = "TestAz API",
+		Version = "v1"
+	});
+
+	var securityScheme = new OpenApiSecurityScheme
+	{
+		Name = "Authorization",
+		Type = SecuritySchemeType.Http,
+		Scheme = "bearer",
+		BearerFormat = "JWT",
+		In = ParameterLocation.Header,
+		Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+		Reference = new OpenApiReference
+		{
+			Type = ReferenceType.SecurityScheme,
+			Id = "Bearer"
+		}
+	};
+
+	options.AddSecurityDefinition("Bearer", securityScheme);
+	options.AddSecurityRequirement(new OpenApiSecurityRequirement
+	{
+		{ securityScheme, Array.Empty<string>() }
+	});
+});
 
 // JWT Auth
 var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? throw new InvalidOperationException("JWT Key not found");
