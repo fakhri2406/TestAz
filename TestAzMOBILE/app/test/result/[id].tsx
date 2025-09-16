@@ -235,7 +235,7 @@ export default function TestResultDetailScreen() {
               <ThemedView style={styles.scoreDetailItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
                 <ThemedText style={styles.scoreDetailText}>
-                  Правильных ответов: {correctCount}/{totalCount}
+                  Düzgün cavablar {correctCount}/{totalCount}
                 </ThemedText>
               </ThemedView>
               <ThemedView style={styles.scoreDetailItem}>
@@ -356,7 +356,7 @@ export default function TestResultDetailScreen() {
                 <ThemedView style={styles.questionHeader}>
                   <ThemedText style={styles.questionNumber}>
                     {translations.question} {test.questions.length + index + 1}{" "}
-                    (Открытый вопрос)
+                    (Açıq sual)
                   </ThemedText>
                   {correctOpenAnswers.length > 0 && (
                     <ThemedView
@@ -384,16 +384,16 @@ export default function TestResultDetailScreen() {
                 </ThemedText>
 
                 <ThemedView style={styles.openAnswerContainer}>
-                  <ThemedText style={styles.answerLabel}>Ваш ответ:</ThemedText>
+                  <ThemedText style={styles.answerLabel}>Sizin cavabınız:</ThemedText>
                   <ThemedText style={styles.openAnswerText}>
-                    {answer?.answerText || "Нет ответа"}
+                    {answer?.answerText || "Cavab yoxdur"}
                   </ThemedText>
                 </ThemedView>
 
                 {correctOpenAnswers.length > 0 && !isCorrect && (
                   <ThemedView>
                     <ThemedText style={styles.answerLabel}>
-                      Правильный ответ:
+                      Düzgün cavab:
                     </ThemedText>
                     <ThemedText>{correctOpenAnswers[index]}</ThemedText>
                   </ThemedView>
