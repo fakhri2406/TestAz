@@ -54,6 +54,9 @@ export default function TestResultDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [correctOpenAnswers, setCorrectOpenAnswers] = useState<string[]>([]);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [result, setResult] = useState<LocalResult | null>(null);
 
   const tintColor = useThemeColor({}, "tint");
   const backgroundColor = useThemeColor({}, "background");
@@ -67,7 +70,6 @@ export default function TestResultDetailScreen() {
     try {
       setLoading(true);
 
-      // Загружаем сохраненные результаты
       const storedResults = await AsyncStorage.getItem("testResults");
       const results = storedResults ? JSON.parse(storedResults) : {};
       const result: LocalResult = results[params.id as string];
@@ -81,7 +83,6 @@ export default function TestResultDetailScreen() {
       setAnswers(result.answers);
       setCorrectOpenAnswers(result.correctOpenAnswers || []);
 
-      // Загружаем данные теста
       const storedTests = await AsyncStorage.getItem("testData");
       const tests = storedTests ? JSON.parse(storedTests) : {};
       const testData: LocalTest = tests[result.testId];
@@ -94,23 +95,52 @@ export default function TestResultDetailScreen() {
 
       setTest(testData);
 
-      // Вычисляем score
       const closedQuestions = testData.questions;
-      let correctCount = 0;
+      const openQuestions = testData.openQuestions;
 
-      result.answers.forEach(answer => {
-        if (!answer.isOpenQuestion && answer.selectedOptionIndex !== undefined) {
-          const question = closedQuestions.find(q => q.id === answer.questionId);
-          if (question && answer.selectedOptionIndex === question.correctOptionIndex) {
+      let correctCount = 0;
+      let totalCount = closedQuestions.length + openQuestions.length;
+
+      result.answers.forEach((answer) => {
+        if (
+          !answer.isOpenQuestion &&
+          answer.selectedOptionIndex !== undefined
+        ) {
+          const question = closedQuestions.find(
+            (q) => q.id === answer.questionId
+          );
+          if (
+            question &&
+            answer.selectedOptionIndex === question.correctOptionIndex
+          ) {
             correctCount++;
           }
         }
       });
 
-      const totalClosed = closedQuestions.length;
-      const calculatedScore = totalClosed > 0 ? Math.round((correctCount / totalClosed) * 100) : 0;
-      setScore(calculatedScore);
+      if (result.correctOpenAnswers && result.correctOpenAnswers.length > 0) {
+        result.answers.forEach((answer) => {
+          if (answer.isOpenQuestion && answer.answerText) {
+            const questionIndex = openQuestions.findIndex(
+              (q) => q.id === answer.questionId
+            );
+            if (questionIndex !== -1) {
+              const isCorrect =
+                answer.answerText.trim().toLowerCase() ===
+                result.correctOpenAnswers![questionIndex]?.toLowerCase();
+              if (isCorrect) {
+                correctCount++;
+              }
+            }
+          }
+        });
+      }
 
+      setCorrectCount(correctCount);
+      setTotalCount(totalCount);
+      const calculatedScore =
+        totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+      setScore(calculatedScore);
     } catch (error) {
       console.error("Error loading local data:", error);
       Alert.alert("Ошибка", "Не удалось загрузить данные");
@@ -136,12 +166,15 @@ export default function TestResultDetailScreen() {
   };
 
   const getAnswerForQuestion = (questionId: string) => {
-    return answers.find(a => a.questionId === questionId);
+    return answers.find((a) => a.questionId === questionId);
   };
 
   const isOpenAnswerCorrect = (answerText: string, questionIndex: number) => {
     if (!correctOpenAnswers.length) return false;
-    return answerText.trim().toLowerCase() === correctOpenAnswers[questionIndex]?.toLowerCase();
+    return (
+      answerText.trim().toLowerCase() ===
+      correctOpenAnswers[questionIndex]?.toLowerCase()
+    );
   };
 
   if (loading || !test) {
@@ -159,7 +192,10 @@ export default function TestResultDetailScreen() {
       <ScreenshotPrevention />
       <ThemedView style={styles.container}>
         <TouchableOpacity
-          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
+          style={[
+            styles.returnButton,
+            { backgroundColor: cardBackgroundColor },
+          ]}
           onPress={handleBackPress}
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
@@ -170,16 +206,40 @@ export default function TestResultDetailScreen() {
 
         <ScrollView style={styles.scrollView}>
           <ThemedText style={styles.title}>{test.title}</ThemedText>
-          
-          <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
+
+          <ThemedView
+            style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}
+          >
             <ThemedView style={styles.scoreHeader}>
               <ThemedView style={styles.scorePercentageContainer}>
                 <ThemedText style={styles.scoreText}>{score}%</ThemedText>
-                <ThemedView style={[styles.scoreBadge, { backgroundColor: score >= 70 ? "#E8F5E9" : "#FFEBEE" }]}>
-                  <ThemedText style={[styles.scoreBadgeText, { color: score >= 70 ? "#2E7D32" : "#C62828" }]}>
+                <ThemedView
+                  style={[
+                    styles.scoreBadge,
+                    { backgroundColor: score >= 70 ? "#E8F5E9" : "#FFEBEE" },
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.scoreBadgeText,
+                      { color: score >= 70 ? "#2E7D32" : "#C62828" },
+                    ]}
+                  >
                     {score >= 70 ? translations.passed : translations.failed}
                   </ThemedText>
                 </ThemedView>
+              </ThemedView>
+            </ThemedView>
+
+            <ThemedView style={styles.scoreDetails}>
+              <ThemedView style={styles.scoreDetailItem}>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                <ThemedText style={styles.scoreDetailText}>
+                  Правильных ответов: {correctCount}/{totalCount}
+                </ThemedText>
+              </ThemedView>
+              <ThemedView style={styles.scoreDetailItem}>
+                <Ionicons name="calendar" size={20} color="#666" />
               </ThemedView>
             </ThemedView>
           </ThemedView>
@@ -187,27 +247,50 @@ export default function TestResultDetailScreen() {
           {/* Закрытые вопросы */}
           {test.questions.map((question, index) => {
             const answer = getAnswerForQuestion(question.id);
-            const isCorrect = answer?.selectedOptionIndex === question.correctOptionIndex;
+            const isCorrect =
+              answer?.selectedOptionIndex === question.correctOptionIndex;
 
             return (
-              <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+              <ThemedView
+                key={question.id}
+                style={[
+                  styles.questionCard,
+                  { backgroundColor: cardBackgroundColor },
+                ]}
+              >
                 <ThemedView style={styles.questionHeader}>
                   <ThemedText style={styles.questionNumber}>
                     {translations.question} {index + 1}
                   </ThemedText>
-                  <ThemedView style={[styles.statusBadge, { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" }]}>
-                    <ThemedText style={[styles.statusText, { color: isCorrect ? "#2E7D32" : "#C62828" }]}>
-                      {isCorrect ? translations.correct : translations.incorrect}
+                  <ThemedView
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" },
+                    ]}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.statusText,
+                        { color: isCorrect ? "#2E7D32" : "#C62828" },
+                      ]}
+                    >
+                      {isCorrect
+                        ? translations.correct
+                        : translations.incorrect}
                     </ThemedText>
                   </ThemedView>
                 </ThemedView>
 
-                <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+                <ThemedText style={styles.questionText}>
+                  {question.text}
+                </ThemedText>
 
                 <ThemedView style={styles.optionsContainer}>
                   {question.options.map((option, optionIndex) => {
-                    const isSelected = answer?.selectedOptionIndex === optionIndex;
-                    const isCorrectOption = optionIndex === question.correctOptionIndex;
+                    const isSelected =
+                      answer?.selectedOptionIndex === optionIndex;
+                    const isCorrectOption =
+                      optionIndex === question.correctOptionIndex;
 
                     let optionStyle = {};
                     let circleStyle = {};
@@ -221,17 +304,30 @@ export default function TestResultDetailScreen() {
                       optionStyle = styles.selectedOption;
                       circleStyle = styles.selectedOptionCircle;
                       textStyle = styles.selectedOptionText;
+                    } else {
+                      optionStyle = styles.incorrectOption;
+                      circleStyle = styles.incorrectOptionCircle;
+                      textStyle = styles.incorrectOptionText;
                     }
 
                     return (
-                      <ThemedView key={optionIndex} style={[styles.optionContainer, optionStyle]}>
+                      <ThemedView
+                        key={optionIndex}
+                        style={[styles.optionContainer, optionStyle]}
+                      >
                         <ThemedView style={styles.optionContent}>
-                          <ThemedView style={[styles.optionCircle, circleStyle]}>
-                            <ThemedText style={[styles.optionNumber, textStyle]}>
+                          <ThemedView
+                            style={[styles.optionCircle, circleStyle]}
+                          >
+                            <ThemedText
+                              style={[styles.optionNumber, textStyle]}
+                            >
                               {String.fromCharCode(65 + optionIndex)}
                             </ThemedText>
                           </ThemedView>
-                          <ThemedText style={[styles.optionText, textStyle]}>{option.text}</ThemedText>
+                          <ThemedText style={[styles.optionText, textStyle]}>
+                            {option.text}
+                          </ThemedText>
                         </ThemedView>
                       </ThemedView>
                     );
@@ -244,33 +340,61 @@ export default function TestResultDetailScreen() {
           {/* Открытые вопросы */}
           {test.openQuestions.map((question, index) => {
             const answer = getAnswerForQuestion(question.id);
-            const isCorrect = isOpenAnswerCorrect(answer?.answerText || "", index);
+            const isCorrect = isOpenAnswerCorrect(
+              answer?.answerText || "",
+              index
+            );
 
             return (
-              <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+              <ThemedView
+                key={question.id}
+                style={[
+                  styles.questionCard,
+                  { backgroundColor: cardBackgroundColor },
+                ]}
+              >
                 <ThemedView style={styles.questionHeader}>
                   <ThemedText style={styles.questionNumber}>
-                    {translations.question} {test.questions.length + index + 1} (Открытый вопрос)
+                    {translations.question} {test.questions.length + index + 1}{" "}
+                    (Открытый вопрос)
                   </ThemedText>
                   {correctOpenAnswers.length > 0 && (
-                    <ThemedView style={[styles.statusBadge, { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" }]}>
-                      <ThemedText style={[styles.statusText, { color: isCorrect ? "#2E7D32" : "#C62828" }]}>
-                        {isCorrect ? translations.correct : translations.incorrect}
+                    <ThemedView
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" },
+                      ]}
+                    >
+                      <ThemedText
+                        style={[
+                          styles.statusText,
+                          { color: isCorrect ? "#2E7D32" : "#C62828" },
+                        ]}
+                      >
+                        {isCorrect
+                          ? translations.correct
+                          : translations.incorrect}
                       </ThemedText>
                     </ThemedView>
                   )}
                 </ThemedView>
 
-                <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+                <ThemedText style={styles.questionText}>
+                  {question.text}
+                </ThemedText>
 
                 <ThemedView style={styles.openAnswerContainer}>
                   <ThemedText style={styles.answerLabel}>Ваш ответ:</ThemedText>
-                  <ThemedText style={styles.openAnswerText}>{answer?.answerText || "Нет ответа"}</ThemedText>
+                  <ThemedText style={styles.openAnswerText}>
+                    {answer?.answerText || "Нет ответа"}
+                  </ThemedText>
                 </ThemedView>
 
                 {correctOpenAnswers.length > 0 && !isCorrect && (
                   <ThemedView>
-                    <ThemedText style={styles.answerLabel}>Правильный ответ:</ThemedText>
+                    <ThemedText style={styles.answerLabel}>
+                      Правильный ответ:
+                    </ThemedText>
                     <ThemedText>{correctOpenAnswers[index]}</ThemedText>
                   </ThemedView>
                 )}
@@ -282,7 +406,6 @@ export default function TestResultDetailScreen() {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   safeArea: {
