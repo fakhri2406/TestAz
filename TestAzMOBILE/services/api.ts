@@ -294,6 +294,16 @@ export const api = {
     }
   },
 
+  getOpenQuestions: async (testId: string): Promise<OpenQuestion[]> => {
+    try {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/test/${testId}/open-questions`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting open questions:', error);
+      throw error;
+    }
+  },
+
   // Video Course functions
   getVideoCourses: async (): Promise<VideoCourse[]> => {
     try {

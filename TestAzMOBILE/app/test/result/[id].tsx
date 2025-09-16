@@ -5,42 +5,31 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { api } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenshotPrevention } from "@/components/ScreenshotPrevention";
 import { translations } from "@/constants/translations";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface TestResultDetail {
+interface LocalTest {
   id: string;
-  testId: string;
-  testTitle: string;
-  userId: string;
-  userName: string;
-  score: number;
-  totalQuestions: number;
-  submittedAt: string;
-  totalPossiblePoints: number;
-  earnedPoints: number;
+  title: string;
+  description: string;
   questions: Array<{
-    questionId: string;
-    questionText: string;
-    options: string[];
+    id: string;
+    text: string;
+    options: Array<{
+      text: string;
+      isCorrect?: boolean;
+      orderIndex?: number;
+    }>;
     correctOptionIndex: number;
-    isOpenQuestion?: boolean;
+    type: number;
   }>;
-  answers: Array<{
-    questionId: string;
-    questionText: string;
-    selectedOptionIndex: number;
-    correctOptionIndex: number;
-    options: string[];
-    isCorrect: boolean;
-    correctOption: string;
-    pointsEarned: number;
-    totalPoints: number;
-    AnswerText: string;
-    isOpenQuestion?: boolean;
+  openQuestions: Array<{
+    id: string;
+    text: string;
+    points: number;
+    correctAnswer: string;
   }>;
 }
 
@@ -51,40 +40,80 @@ interface LocalAnswer {
   isOpenQuestion: boolean;
 }
 
+interface LocalResult {
+  testId: string;
+  answers: LocalAnswer[];
+  timestamp: number;
+  correctOpenAnswers?: string[];
+}
+
 export default function TestResultDetailScreen() {
   const params = useLocalSearchParams();
-  const [result, setResult] = useState<TestResultDetail | null>(null);
-  const [localAnswers, setLocalAnswers] = useState<LocalAnswer[]>([]);
+  const [test, setTest] = useState<LocalTest | null>(null);
+  const [answers, setAnswers] = useState<LocalAnswer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [score, setScore] = useState(0);
+  const [correctOpenAnswers, setCorrectOpenAnswers] = useState<string[]>([]);
 
   const tintColor = useThemeColor({}, "tint");
   const backgroundColor = useThemeColor({}, "background");
   const cardBackgroundColor = useThemeColor({}, "background");
 
   useEffect(() => {
-    loadResultAndAnswers();
+    loadLocalData();
   }, [params.id]);
 
-  const loadResultAndAnswers = async () => {
+  const loadLocalData = async () => {
     try {
       setLoading(true);
 
-      const resultData = await api.getTestResultDetail(params.id as string);
-      setResult(resultData);
+      // Загружаем сохраненные результаты
+      const storedResults = await AsyncStorage.getItem("testResults");
+      const results = storedResults ? JSON.parse(storedResults) : {};
+      const result: LocalResult = results[params.id as string];
 
-      const storedData = await AsyncStorage.getItem("testResults");
-      const results = storedData ? JSON.parse(storedData) : {};
-      const localResult = results[params.id as string];
-
-      if (localResult && localResult.answers) {
-        setLocalAnswers(localResult.answers);
-        console.log("Loaded local answers:", localResult.answers);
-      } else {
-        console.log("No local answers found for result:", params.id);
+      if (!result) {
+        Alert.alert("Ошибка", "Данные результата не найдены");
+        router.back();
+        return;
       }
+
+      setAnswers(result.answers);
+      setCorrectOpenAnswers(result.correctOpenAnswers || []);
+
+      // Загружаем данные теста
+      const storedTests = await AsyncStorage.getItem("testData");
+      const tests = storedTests ? JSON.parse(storedTests) : {};
+      const testData: LocalTest = tests[result.testId];
+
+      if (!testData) {
+        Alert.alert("Ошибка", "Данные теста не найдены");
+        router.back();
+        return;
+      }
+
+      setTest(testData);
+
+      // Вычисляем score
+      const closedQuestions = testData.questions;
+      let correctCount = 0;
+
+      result.answers.forEach(answer => {
+        if (!answer.isOpenQuestion && answer.selectedOptionIndex !== undefined) {
+          const question = closedQuestions.find(q => q.id === answer.questionId);
+          if (question && answer.selectedOptionIndex === question.correctOptionIndex) {
+            correctCount++;
+          }
+        }
+      });
+
+      const totalClosed = closedQuestions.length;
+      const calculatedScore = totalClosed > 0 ? Math.round((correctCount / totalClosed) * 100) : 0;
+      setScore(calculatedScore);
+
     } catch (error) {
-      console.error("Error loading test result:", error);
-      Alert.alert(translations.error, translations.failedToLoadTests);
+      console.error("Error loading local data:", error);
+      Alert.alert("Ошибка", "Не удалось загрузить данные");
       router.back();
     } finally {
       setLoading(false);
@@ -98,7 +127,6 @@ export default function TestResultDetailScreen() {
         const results = JSON.parse(storedData);
         delete results[params.id as string];
         await AsyncStorage.setItem("testResults", JSON.stringify(results));
-        console.log("Removed answers for test:", params.id);
       }
     } catch (error) {
       console.error("Error removing answers:", error);
@@ -107,55 +135,16 @@ export default function TestResultDetailScreen() {
     }
   };
 
-  const getAnswerForQuestion = (questionIndex: number) => {
-    if (result?.answers && result.answers.length > 0) {
-      const question = result.questions[questionIndex];
-      return result.answers.find((a) => a.questionId === question.questionId);
-    } else if (localAnswers.length > 0) {
-      const question = result?.questions[questionIndex];
-      if (!question) return null;
-
-      const localAnswer = localAnswers.find(
-        (a) => a.questionId === question.questionId
-      );
-
-      if (!localAnswer) return null;
-
-      // Для закрытых вопросов
-      if (
-        !localAnswer.isOpenQuestion &&
-        localAnswer.selectedOptionIndex !== undefined
-      ) {
-        const selectedOptionIndex = localAnswer.selectedOptionIndex;
-        const isCorrect = selectedOptionIndex === question.correctOptionIndex;
-
-        return {
-          questionId: question.questionId,
-          selectedOptionIndex,
-          correctOptionIndex: question.correctOptionIndex,
-          isCorrect,
-          AnswerText: question.options[selectedOptionIndex] || "",
-          options: question.options,
-          isOpenQuestion: false,
-        };
-      }
-      // Для открытых вопросов
-      else if (localAnswer.isOpenQuestion) {
-        return {
-          questionId: question.questionId,
-          selectedOptionIndex: -1, // Специальное значение для открытых вопросов
-          correctOptionIndex: -1,
-          isCorrect: false, // Не проверяем открытые вопросы автоматически
-          AnswerText: localAnswer.answerText || "",
-          options: [],
-          isOpenQuestion: true,
-        };
-      }
-    }
-    return null;
+  const getAnswerForQuestion = (questionId: string) => {
+    return answers.find(a => a.questionId === questionId);
   };
 
-  if (loading || !result) {
+  const isOpenAnswerCorrect = (answerText: string, questionIndex: number) => {
+    if (!correctOpenAnswers.length) return false;
+    return answerText.trim().toLowerCase() === correctOpenAnswers[questionIndex]?.toLowerCase();
+  };
+
+  if (loading || !test) {
     return (
       <ThemedView style={styles.loadingContainer}>
         <ThemedText>{translations.loading}</ThemedText>
@@ -163,18 +152,14 @@ export default function TestResultDetailScreen() {
     );
   }
 
-  const hasAnswers =
-    (result.answers && result.answers.length > 0) || localAnswers.length > 0;
+  const totalQuestions = test.questions.length + test.openQuestions.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScreenshotPrevention />
       <ThemedView style={styles.container}>
         <TouchableOpacity
-          style={[
-            styles.returnButton,
-            { backgroundColor: cardBackgroundColor },
-          ]}
+          style={[styles.returnButton, { backgroundColor: cardBackgroundColor }]}
           onPress={handleBackPress}
         >
           <Ionicons name="arrow-back" size={24} color={tintColor} />
@@ -184,288 +169,120 @@ export default function TestResultDetailScreen() {
         </TouchableOpacity>
 
         <ScrollView style={styles.scrollView}>
-          <ThemedText style={styles.title}>{result.testTitle}</ThemedText>
-          <ThemedView
-            style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}
-          >
+          <ThemedText style={styles.title}>{test.title}</ThemedText>
+          
+          <ThemedView style={[styles.scoreCard, { backgroundColor: cardBackgroundColor }]}>
             <ThemedView style={styles.scoreHeader}>
               <ThemedView style={styles.scorePercentageContainer}>
-                <ThemedText style={styles.scoreText}>
-                  {result.score}%
-                </ThemedText>
-                <ThemedView
-                  style={[
-                    styles.scoreBadge,
-                    {
-                      backgroundColor:
-                        result.score >= 70 ? "#E8F5E9" : "#FFEBEE",
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    style={[
-                      styles.scoreBadgeText,
-                      { color: result.score >= 70 ? "#2E7D32" : "#C62828" },
-                    ]}
-                  >
-                    {result.score >= 70
-                      ? translations.passed
-                      : translations.failed}
+                <ThemedText style={styles.scoreText}>{score}%</ThemedText>
+                <ThemedView style={[styles.scoreBadge, { backgroundColor: score >= 70 ? "#E8F5E9" : "#FFEBEE" }]}>
+                  <ThemedText style={[styles.scoreBadgeText, { color: score >= 70 ? "#2E7D32" : "#C62828" }]}>
+                    {score >= 70 ? translations.passed : translations.failed}
                   </ThemedText>
                 </ThemedView>
-              </ThemedView>
-            </ThemedView>
-            <ThemedView style={styles.scoreDetails}>
-              <ThemedView style={styles.scoreDetailItem}>
-                <Ionicons name="calendar" size={24} color="#666" />
-                <ThemedText style={styles.scoreDetailText}>
-                  {new Date(result.submittedAt).toLocaleDateString()}
-                </ThemedText>
               </ThemedView>
             </ThemedView>
           </ThemedView>
 
-          {!hasAnswers ? (
-            <ThemedView
-              style={[
-                styles.questionCard,
-                { backgroundColor: cardBackgroundColor },
-              ]}
-            >
-              <ThemedText style={styles.questionText}>
-                Данные ответов недоступны
-              </ThemedText>
-            </ThemedView>
-          ) : result.questions && result.questions.length > 0 ? (
-            result.questions.map((question, index) => {
-              const answer = getAnswerForQuestion(index);
+          {/* Закрытые вопросы */}
+          {test.questions.map((question, index) => {
+            const answer = getAnswerForQuestion(question.id);
+            const isCorrect = answer?.selectedOptionIndex === question.correctOptionIndex;
 
-              if (!answer) return null;
-
-              // Для открытых вопросов показываем текстовый ответ
-              if (answer.isOpenQuestion) {
-                return (
-                  <ThemedView
-                    key={question.questionId}
-                    style={[
-                      styles.questionCard,
-                      { backgroundColor: cardBackgroundColor },
-                    ]}
-                  >
-                    <ThemedView style={styles.questionHeader}>
-                      <ThemedText style={styles.questionNumber}>
-                        {translations.question} {index + 1} (Открытый вопрос)
-                      </ThemedText>
-                    </ThemedView>
-
-                    <ThemedText style={styles.questionText}>
-                      {question.questionText}
-                    </ThemedText>
-
-                    <ThemedView style={styles.openAnswerContainer}>
-                      <ThemedText style={styles.answerLabel}>
-                        Ваш ответ:
-                      </ThemedText>
-                      <ThemedText style={styles.openAnswerText}>
-                        {answer.AnswerText || "Нет ответа"}
-                      </ThemedText>
-                    </ThemedView>
-                  </ThemedView>
-                );
-              }
-
-              // Для закрытых вопросов
-              return (
-                <ThemedView
-                  key={question.questionId}
-                  style={[
-                    styles.questionCard,
-                    { backgroundColor: cardBackgroundColor },
-                  ]}
-                >
-                  <ThemedView style={styles.questionHeader}>
-                    <ThemedText style={styles.questionNumber}>
-                      {translations.question} {index + 1}
-                    </ThemedText>
-                    <ThemedView
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: answer.isCorrect
-                            ? "#E8F5E9"
-                            : "#FFEBEE",
-                        },
-                      ]}
-                    >
-                      <ThemedText
-                        style={[
-                          styles.statusText,
-                          { color: answer.isCorrect ? "#2E7D32" : "#C62828" },
-                        ]}
-                      >
-                        {answer.isCorrect
-                          ? translations.correct
-                          : translations.incorrect}
-                      </ThemedText>
-                    </ThemedView>
-                  </ThemedView>
-
-                  <ThemedText style={styles.questionText}>
-                    {question.questionText}
+            return (
+              <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+                <ThemedView style={styles.questionHeader}>
+                  <ThemedText style={styles.questionNumber}>
+                    {translations.question} {index + 1}
                   </ThemedText>
+                  <ThemedView style={[styles.statusBadge, { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" }]}>
+                    <ThemedText style={[styles.statusText, { color: isCorrect ? "#2E7D32" : "#C62828" }]}>
+                      {isCorrect ? translations.correct : translations.incorrect}
+                    </ThemedText>
+                  </ThemedView>
+                </ThemedView>
 
-                  <ThemedView style={styles.optionsContainer}>
-                    {question.options.map((option, optionIndex) => {
-                      const isCorrect =
-                        optionIndex === question.correctOptionIndex;
-                      const isSelected =
-                        optionIndex === answer.selectedOptionIndex;
-                      const isIncorrectOption = !isCorrect && !isSelected;
+                <ThemedText style={styles.questionText}>{question.text}</ThemedText>
 
-                      let optionStyle = {};
-                      let circleStyle = {};
-                      let textStyle = {};
-                      let icon = null;
+                <ThemedView style={styles.optionsContainer}>
+                  {question.options.map((option, optionIndex) => {
+                    const isSelected = answer?.selectedOptionIndex === optionIndex;
+                    const isCorrectOption = optionIndex === question.correctOptionIndex;
 
-                      if (isCorrect) {
-                        // Правильный ответ - зеленый
-                        optionStyle = styles.correctOption;
-                        circleStyle = styles.correctOptionCircle;
-                        textStyle = styles.correctOptionText;
-                        icon = (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={24}
-                            color="#2E7D32"
-                          />
-                        );
-                      } else if (isSelected) {
-                        // Выбранный НЕправильный ответ - синий
-                        optionStyle = styles.selectedOption;
-                        circleStyle = styles.selectedOptionCircle;
-                        textStyle = styles.selectedOptionText;
-                        icon = (
-                          <Ionicons
-                            name="close-circle"
-                            size={24}
-                            color="#2196F3" // Синий цвет вместо красного
-                          />
-                        );
-                      } else if (isIncorrectOption) {
-                        // НЕ выбранный и НЕ правильный - красный
-                        optionStyle = styles.incorrectOption;
-                        circleStyle = styles.incorrectOptionCircle;
-                        textStyle = styles.incorrectOptionText;
-                        icon = (
-                          <Ionicons
-                            name="close-circle"
-                            size={24}
-                            color="#C62828" // Красный цвет
-                          />
-                        );
-                      } else {
-                        // Обычный вариант (не должен срабатывать)
-                        optionStyle = {};
-                        circleStyle = {};
-                        textStyle = {};
-                        icon = null;
-                      }
+                    let optionStyle = {};
+                    let circleStyle = {};
+                    let textStyle = {};
 
-                      return (
-                        <ThemedView
-                          key={optionIndex}
-                          style={[styles.optionContainer, optionStyle]}
-                        >
-                          <ThemedView style={styles.optionContent}>
-                            <ThemedView
-                              style={[styles.optionCircle, circleStyle]}
-                            >
-                              <ThemedText
-                                style={[styles.optionNumber, textStyle]}
-                              >
-                                {String.fromCharCode(65 + optionIndex)}
-                              </ThemedText>
-                            </ThemedView>
-                            <ThemedText style={[styles.optionText, textStyle]}>
-                              {option}
+                    if (isCorrectOption) {
+                      optionStyle = styles.correctOption;
+                      circleStyle = styles.correctOptionCircle;
+                      textStyle = styles.correctOptionText;
+                    } else if (isSelected) {
+                      optionStyle = styles.selectedOption;
+                      circleStyle = styles.selectedOptionCircle;
+                      textStyle = styles.selectedOptionText;
+                    }
+
+                    return (
+                      <ThemedView key={optionIndex} style={[styles.optionContainer, optionStyle]}>
+                        <ThemedView style={styles.optionContent}>
+                          <ThemedView style={[styles.optionCircle, circleStyle]}>
+                            <ThemedText style={[styles.optionNumber, textStyle]}>
+                              {String.fromCharCode(65 + optionIndex)}
                             </ThemedText>
                           </ThemedView>
-
-                          {icon && (
-                            <ThemedView style={styles.optionIndicator}>
-                              {icon}
-                            </ThemedView>
-                          )}
+                          <ThemedText style={[styles.optionText, textStyle]}>{option.text}</ThemedText>
                         </ThemedView>
-                      );
-                    })}
-                  </ThemedView>
-
-                  {!answer.isCorrect && (
-                    <ThemedView style={styles.answerSummary}>
-                      <ThemedView style={styles.answerSummaryRow}>
-                        <ThemedView style={styles.answerSummaryLabel}>
-                          <Ionicons
-                            name="close-circle"
-                            size={20}
-                            color="#2196F3" // Синий цвет
-                          />
-                          <ThemedText style={styles.answerSummaryLabelText}>
-                            {translations.yourAnswer}:
-                          </ThemedText>
-                        </ThemedView>
-                        <ThemedText
-                          style={[
-                            styles.answerSummaryValue,
-                            { color: "#2196F3" }, // Синий цвет
-                          ]}
-                        >
-                          {String.fromCharCode(65 + answer.selectedOptionIndex)}
-                        </ThemedText>
                       </ThemedView>
+                    );
+                  })}
+                </ThemedView>
+              </ThemedView>
+            );
+          })}
 
-                      <ThemedView style={styles.answerSummaryRow}>
-                        <ThemedView style={styles.answerSummaryLabel}>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={20}
-                            color="#2E7D32"
-                          />
-                          <ThemedText style={styles.answerSummaryLabelText}>
-                            {translations.correctAnswer}:
-                          </ThemedText>
-                        </ThemedView>
-                        <ThemedText
-                          style={[
-                            styles.answerSummaryValue,
-                            { color: "#2E7D32" },
-                          ]}
-                        >
-                          {String.fromCharCode(65 + answer.correctOptionIndex)}
-                        </ThemedText>
-                      </ThemedView>
+          {/* Открытые вопросы */}
+          {test.openQuestions.map((question, index) => {
+            const answer = getAnswerForQuestion(question.id);
+            const isCorrect = isOpenAnswerCorrect(answer?.answerText || "", index);
+
+            return (
+              <ThemedView key={question.id} style={[styles.questionCard, { backgroundColor: cardBackgroundColor }]}>
+                <ThemedView style={styles.questionHeader}>
+                  <ThemedText style={styles.questionNumber}>
+                    {translations.question} {test.questions.length + index + 1} (Открытый вопрос)
+                  </ThemedText>
+                  {correctOpenAnswers.length > 0 && (
+                    <ThemedView style={[styles.statusBadge, { backgroundColor: isCorrect ? "#E8F5E9" : "#FFEBEE" }]}>
+                      <ThemedText style={[styles.statusText, { color: isCorrect ? "#2E7D32" : "#C62828" }]}>
+                        {isCorrect ? translations.correct : translations.incorrect}
+                      </ThemedText>
                     </ThemedView>
                   )}
                 </ThemedView>
-              );
-            })
-          ) : (
-            <ThemedView
-              style={[
-                styles.questionCard,
-                { backgroundColor: cardBackgroundColor },
-              ]}
-            >
-              <ThemedText style={styles.questionText}>
-                No questions available
-              </ThemedText>
-            </ThemedView>
-          )}
+
+                <ThemedText style={styles.questionText}>{question.text}</ThemedText>
+
+                <ThemedView style={styles.openAnswerContainer}>
+                  <ThemedText style={styles.answerLabel}>Ваш ответ:</ThemedText>
+                  <ThemedText style={styles.openAnswerText}>{answer?.answerText || "Нет ответа"}</ThemedText>
+                </ThemedView>
+
+                {correctOpenAnswers.length > 0 && !isCorrect && (
+                  <ThemedView>
+                    <ThemedText style={styles.answerLabel}>Правильный ответ:</ThemedText>
+                    <ThemedText>{correctOpenAnswers[index]}</ThemedText>
+                  </ThemedView>
+                )}
+              </ThemedView>
+            );
+          })}
         </ScrollView>
       </ThemedView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {

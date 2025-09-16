@@ -132,6 +132,7 @@ export default function TakeTestScreen() {
   );
   const [openQuestionAnswers, setOpenQuestionAnswers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [correctOpenAnswers, setCorrectOpenAnswers] = useState<string[]>([]);
 
   const tintColor = useThemeColor({}, "tint");
   const backgroundColor = useThemeColor({}, "background");
@@ -141,12 +142,22 @@ export default function TakeTestScreen() {
     loadTest();
   }, [id]);
 
-  // Загружаем сохраненные ответы после того как тест загружен
   useEffect(() => {
     if (test) {
       loadSavedAnswers();
+      loadCorrectOpenAnswers();
     }
   }, [test]);
+
+  const loadCorrectOpenAnswers = async () => {
+    try {
+      const openQuestions = await api.getOpenQuestions(test!.id);
+      const correctAnswers = openQuestions.map((q) => q.correctAnswer);
+      setCorrectOpenAnswers(correctAnswers);
+    } catch (error) {
+      console.error("Error loading correct open answers:", error);
+    }
+  };
 
   const saveTestAnswers = async (
     testId: string,
@@ -161,6 +172,7 @@ export default function TakeTestScreen() {
         testId,
         answers,
         timestamp: Date.now(),
+        correctOpenAnswers: correctOpenAnswers, // Сохраняем правильные ответы
       };
 
       await AsyncStorage.setItem("testResults", JSON.stringify(results));
@@ -174,24 +186,17 @@ export default function TakeTestScreen() {
     try {
       const storedAnswers = await loadLocalAnswers();
 
-      // Загружаем ответы на закрытые вопросы
       const loadedClosedAnswers = test!.questions.map((q) => {
         const saved = storedAnswers[q.id];
         return saved && !saved.isOpen ? saved.optionIndex : -1;
       });
       setClosedQuestionAnswers(loadedClosedAnswers);
 
-      // Загружаем ответы на открытые вопросы
       const loadedOpenAnswers = test!.openQuestions.map((q) => {
         const saved = storedAnswers[q.id];
         return saved && saved.isOpen ? saved.text : "";
       });
       setOpenQuestionAnswers(loadedOpenAnswers);
-
-      console.log("Loaded saved answers:", {
-        closed: loadedClosedAnswers,
-        open: loadedOpenAnswers,
-      });
     } catch (err) {
       console.error("Error loading saved answers:", err);
     }
@@ -200,7 +205,6 @@ export default function TakeTestScreen() {
   const loadTest = async () => {
     try {
       setLoading(true);
-
       await clearLocalAnswers();
 
       const testData: TestData = await api.getTest(id as string);
@@ -244,13 +248,8 @@ export default function TakeTestScreen() {
         openQuestions: formattedOpenQuestions,
       };
 
-      console.log(
-        "Final formatted test:",
-        JSON.stringify(formattedTest, null, 2)
-      );
       setTest(formattedTest);
 
-      // Инициализируем пустые ответы
       const initialClosedAnswers = Array(formattedClosedQuestions.length).fill(
         -1
       );
@@ -258,6 +257,14 @@ export default function TakeTestScreen() {
 
       setClosedQuestionAnswers(initialClosedAnswers);
       setOpenQuestionAnswers(initialOpenAnswers);
+
+      // Сохраняем данные теста локально
+      await AsyncStorage.setItem(
+        "testData",
+        JSON.stringify({
+          [formattedTest.id]: formattedTest,
+        })
+      );
     } catch (error) {
       console.error("Error loading test:", error);
       Alert.alert(translations.error, translations.failedToLoadTest);
@@ -318,6 +325,7 @@ export default function TakeTestScreen() {
 
       const apiAnswers: ApiAnswer[] = [];
 
+      // Обрабатываем закрытые вопросы
       closedQuestionAnswers.forEach((selectedOptionIndex, index) => {
         const question = test.questions[index];
         apiAnswers.push({
@@ -328,13 +336,15 @@ export default function TakeTestScreen() {
         });
       });
 
+      // Обрабатываем открытые вопросы - отправляем только ID вопроса
+      // Правильные ответы будем сравнивать на фронтенде
       openQuestionAnswers.forEach((answerText, index) => {
         const question = test.openQuestions[index];
         apiAnswers.push({
           questionId: question.id,
           selectedOptionIndex: -1,
           correctOptionIndex: -1,
-          isCorrect: false,
+          isCorrect: false, // Будет вычислено на фронтенде
           answerText,
         });
       });
@@ -350,9 +360,10 @@ export default function TakeTestScreen() {
 
       const closedCount = test.questions.length;
       const totalCount = test.questions.length + test.openQuestions.length;
-      const score = closedCount > 0
-        ? Math.round((correctAnswersCount / closedCount) * 100)
-        : 0;
+      const score =
+        closedCount > 0
+          ? Math.round((correctAnswersCount / closedCount) * 100)
+          : 0;
 
       const solution: TestSolution = {
         testId: test.id,
