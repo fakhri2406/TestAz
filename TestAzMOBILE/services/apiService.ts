@@ -324,6 +324,8 @@ class ApiService {
       questionId: string;
       selectedOptionIndex: number;
       correctOptionIndex: number;
+      isCorrect?: boolean;
+      answerText?: string | null;
     }[];
     questions: {
       questionId: string;
@@ -344,8 +346,11 @@ class ApiService {
       const { id: userId } = JSON.parse(userData);
       console.log('User ID:', userId);
 
+      // Guard against NaN score
+      const safeScore = Number.isFinite(solution.score) ? solution.score : 0;
       const solutionWithUserId = {
         ...solution,
+        score: safeScore,
         userId
       };
       console.log('Solution with user ID:', solutionWithUserId);

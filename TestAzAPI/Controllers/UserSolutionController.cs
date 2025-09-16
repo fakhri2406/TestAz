@@ -13,27 +13,37 @@ public class UserSolutionController : ControllerBase
     private readonly IUserSolutionRepository _solutionRepo;
     private readonly ITestRepository _testRepo;
     private readonly IUserRepository _userRepo;
+    private readonly IOpenQuestionRepository _openQuestionRepo;
+    private readonly ILogger<UserSolutionController> _logger;
 
-    public UserSolutionController(IUserSolutionRepository solutionRepo, ITestRepository testRepo, IUserRepository userRepo)
+    public UserSolutionController(IUserSolutionRepository solutionRepo, ITestRepository testRepo, IUserRepository userRepo, IOpenQuestionRepository openQuestionRepo, ILogger<UserSolutionController> logger)
     {
         _solutionRepo = solutionRepo;
         _testRepo = testRepo;
         _userRepo = userRepo;
+        _openQuestionRepo = openQuestionRepo;
+        _logger = logger;
     }
 
     [HttpPost("submit")]
     public async Task<IActionResult> SubmitSolution([FromBody] SubmitSolutionRequest request)
     {
-        Console.WriteLine($"Received solution submission for TestId: {request.TestId}, UserId: {request.UserId}");
-        Console.WriteLine($"Score: {request.Score}, Correct Answers: {request.CorrectAnswers}/{request.TotalQuestions}");
+        _logger.LogInformation("SubmitSolution received: TestId={TestId}, UserId={UserId}, Answers={AnswerCount}", request.TestId, request.UserId, request.Answers?.Count ?? 0);
 
         var user = await _userRepo.GetByIdAsync(request.UserId);
         if (user == null)
-            return NotFound("User not found");
+            return NotFound(new { message = "User not found" });
 
         var test = await _testRepo.GetByIdAsync(request.TestId);
         if (test == null)
-            return NotFound("Test not found");
+            return NotFound(new { message = "Test not found" });
+
+        if (request.Answers == null || request.Answers.Count == 0)
+            return BadRequest(new { message = "Answers are required" });
+
+        // Fetch open questions for this test to detect mixed submissions
+        var openQuestions = (await _openQuestionRepo.GetByTestIdAsync(request.TestId)).ToList();
+        var hasOpenAnswers = false;
 
         var solution = new UserSolution
         {
@@ -41,51 +51,78 @@ public class UserSolutionController : ControllerBase
             Test = test,
             StartedAt = DateTime.UtcNow,
             SubmittedAt = DateTime.UtcNow,
-            Score = request.Score,
+            Score = 0,
             Answers = new List<UserAnswer>()
         };
 
+        var closedQuestionsById = test.Questions.ToDictionary(q => q.Id, q => q);
+        var closedCorrectCount = 0;
         foreach (var answer in request.Answers)
         {
-            var question = test.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
-            if (question == null)
+            if (closedQuestionsById.TryGetValue(answer.QuestionId, out var question))
             {
-                Console.WriteLine($"Question {answer.QuestionId} not found in test");
+                var orderedOptions = question.Options.OrderBy(o => o.OrderIndex).ToList();
+                var serverCorrectIndex = orderedOptions.FindIndex(o => o.IsCorrect);
+
+                // Validate selected index for closed questions
+                if (answer.selectedOptionIndex < 0 || answer.selectedOptionIndex >= orderedOptions.Count)
+                {
+                    _logger.LogWarning("Invalid selectedOptionIndex: TestId={TestId}, QuestionId={QuestionId}, SelectedIndex={SelectedIndex}, OptionsCount={OptionsCount}", request.TestId, question.Id, answer.selectedOptionIndex, orderedOptions.Count);
+                    return BadRequest(new { message = $"Invalid selectedOptionIndex for question {question.Id}" });
+                }
+
+                var isCorrect = answer.selectedOptionIndex == serverCorrectIndex;
+                closedCorrectCount += isCorrect ? 1 : 0;
+
+                var userAnswer = new UserAnswer
+                {
+                    UserSolution = solution,
+                    Question = question,
+                    AnswerText = $"{answer.selectedOptionIndex},{serverCorrectIndex}",
+                    IsCorrect = isCorrect,
+                    PointsEarned = isCorrect ? question.Points : 0
+                };
+
+                solution.Answers.Add(userAnswer);
+            }
+            else if (openQuestions.Any(oq => oq.Id == answer.QuestionId))
+            {
+                // Mixed-type submission detected; accept open answers but do not auto-grade or persist (requires manual grading flow)
+                hasOpenAnswers = true;
                 continue;
             }
-
-            var userAnswer = new UserAnswer
+            else
             {
-                UserSolution = solution,
-                Question = question,
-                AnswerText = $"{answer.selectedOptionIndex},{answer.correctOptionIndex}",
-                IsCorrect = answer.IsCorrect,
-                PointsEarned = answer.IsCorrect ? question.Points : 0
-            };
-
-            solution.Answers.Add(userAnswer);
+                _logger.LogWarning("Answer references unknown QuestionId in test: TestId={TestId}, QuestionId={QuestionId}", request.TestId, answer.QuestionId);
+                continue;
+            }
         }
 
+        // Compute final score based on closed questions only
+        var closedCount = test.Questions.Count;
+        var scorePercent = closedCount > 0 ? (int)Math.Round((double)closedCorrectCount / closedCount * 100) : 0;
+        solution.Score = scorePercent;
         solution.CompletedAt = DateTime.UtcNow;
 
         await _solutionRepo.AddAsync(solution);
         await _solutionRepo.SaveChangesAsync();
 
-        return Ok(new
+        var responseBody = new
         {
             id = solution.Id,
-            message = "Solution submitted successfully",
-            score = request.ScoreString,
-            totalQuestions = request.TotalQuestions,
-            correctAnswers = request.CorrectAnswers,
+            message = hasOpenAnswers ? "Solution accepted for review. Open answers require manual grading." : "Solution submitted successfully",
+            scorePercent = scorePercent,
+            scoreString = $"{closedCorrectCount}/{closedCount}",
+            totalQuestions = closedCount + openQuestions.Count,
+            correctAnswers = closedCorrectCount,
             totalPossiblePoints = test.Questions.Sum(q => q.Points),
             earnedPoints = solution.Answers.Sum(a => a.PointsEarned ?? 0),
             answers = solution.Answers.Select(a => {
                 var question = test.Questions.First(q => q.Id == a.QuestionId);
                 var orderedOptions = question.Options.OrderBy(o => o.OrderIndex).ToList();
                 var indices = a.AnswerText.Split(',');
-                var selectedOptionIndex = int.Parse(indices[0]);
-                var correctOptionIndex = int.Parse(indices[1]);
+                var selectedOptionIndex = int.TryParse(indices.ElementAtOrDefault(0), out var sel) ? sel : -1;
+                var correctOptionIndex = int.TryParse(indices.ElementAtOrDefault(1), out var cor) ? cor : -1;
 
                 return new
                 {
@@ -96,7 +133,15 @@ public class UserSolutionController : ControllerBase
                     options = orderedOptions.Select(o => o.Text).ToList()
                 };
             }).ToList()
-        });
+        };
+
+        if (hasOpenAnswers)
+        {
+            _logger.LogInformation("SubmitSolution accepted with open answers requiring manual grading: SolutionId={SolutionId}, TestId={TestId}, UserId={UserId}", solution.Id, request.TestId, request.UserId);
+            return StatusCode(202, responseBody);
+        }
+        _logger.LogInformation("SubmitSolution completed: SolutionId={SolutionId}, TestId={TestId}, UserId={UserId}", solution.Id, request.TestId, request.UserId);
+        return Ok(responseBody);
     }
 
     [HttpGet("user/{userId}")]
@@ -203,4 +248,6 @@ public class UserAnswerRequest
     public int selectedOptionIndex { get; set; }
     
     public int correctOptionIndex { get; set; }
+
+    public string? AnswerText { get; set; }
 }

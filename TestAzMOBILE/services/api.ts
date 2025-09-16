@@ -89,6 +89,8 @@ interface TestSolution {
     questionId: string;
     selectedOptionIndex: number;
     correctOptionIndex: number;
+    isCorrect?: boolean;
+    answerText?: string | null;
   }[];
   questions: {
     questionId: string;

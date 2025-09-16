@@ -66,6 +66,8 @@ interface ApiAnswer {
   questionId: string;
   selectedOptionIndex: number;
   correctOptionIndex: number;
+  isCorrect: boolean;
+  answerText?: string;
 }
 
 interface TestSolution {
@@ -322,6 +324,7 @@ export default function TakeTestScreen() {
           questionId: question.id,
           selectedOptionIndex,
           correctOptionIndex: question.correctOptionIndex,
+          isCorrect: selectedOptionIndex === question.correctOptionIndex,
         });
       });
 
@@ -329,8 +332,10 @@ export default function TakeTestScreen() {
         const question = test.openQuestions[index];
         apiAnswers.push({
           questionId: question.id,
-          selectedOptionIndex: -2,
-          correctOptionIndex: -2,
+          selectedOptionIndex: -1,
+          correctOptionIndex: -1,
+          isCorrect: false,
+          answerText,
         });
       });
 
@@ -343,21 +348,29 @@ export default function TakeTestScreen() {
         0
       );
 
-      const score = Math.round(
-        (correctAnswersCount / test.questions.length) * 100
-      );
+      const closedCount = test.questions.length;
+      const totalCount = test.questions.length + test.openQuestions.length;
+      const score = closedCount > 0
+        ? Math.round((correctAnswersCount / closedCount) * 100)
+        : 0;
 
       const solution: TestSolution = {
         testId: test.id,
         score,
-        scoreString: `${correctAnswersCount}/${test.questions.length}`,
-        totalQuestions: test.questions.length,
+        scoreString: `${correctAnswersCount}/${closedCount}`,
+        totalQuestions: totalCount,
         correctAnswers: correctAnswersCount,
         answers: apiAnswers,
-        questions: test.questions.map((q) => ({
-          questionId: q.id,
-          correctOptionIndex: q.correctOptionIndex,
-        })),
+        questions: [
+          ...test.questions.map((q) => ({
+            questionId: q.id,
+            correctOptionIndex: q.correctOptionIndex,
+          })),
+          ...test.openQuestions.map((oq) => ({
+            questionId: oq.id,
+            correctOptionIndex: -1,
+          })),
+        ],
       };
 
       const response = await api.submitTestSolution(solution);
