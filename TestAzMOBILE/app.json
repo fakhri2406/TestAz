@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "QanunQapısı",
-    "slug": "qanunqapisi",
+    "name": "TestAzMOBILE",
+    "slug": "TestAzMOBILE",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "qanunqapisi",
+    "scheme": "testazmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "package": "com.creadev.qanunqapisi",
+      "package": "com.yourcompany.testaz",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
