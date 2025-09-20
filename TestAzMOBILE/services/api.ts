@@ -264,14 +264,7 @@ export const api = {
 
   updateTest: async (
     id: string,
-    data: {
-      id: string;
-      title: string;
-      description: string;
-      isPremium: boolean;
-      createdAt: string | Date;
-      isActive: boolean;
-    }
+    data: any
   ): Promise<void> => {
     try {
       await apiService.updateTest(id, data);

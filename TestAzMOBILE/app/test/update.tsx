@@ -187,25 +187,18 @@ export default function UpdateTestScreen() {
 
       // 1) Update Test with CLOSED questions (server handles nested graph)
       await api.updateTest(id as string, {
-        id: id as string,
         title,
         description,
         isPremium,
-        createdAt: createdAt || new Date().toISOString(),
-        isActive,
         questions: closedQuestions.map((q) => ({
-          id: q.id,
           text: q.text,
-          type: 0, // MultipleChoice
           points: 1,
-          options: q.options.map((opt, idx) => ({
-            id: opt.id,
+          options: q.options.map((opt) => ({
             text: opt.text,
             isCorrect: opt.isCorrect,
-            orderIndex: idx
           }))
         }))
-      } as any);
+      });
 
       // 2) Open questions CRUD
       // Deleted

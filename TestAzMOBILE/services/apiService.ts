@@ -314,19 +314,25 @@ class ApiService {
     }
   }
 
-  async updateTest(id: string, data: {
-    id: string;
-    title: string;
-    description: string;
-    isPremium: boolean;
-    createdAt: string | Date;
-    isActive: boolean;
-  }) {
+  async updateTest(id: string, data: any) {
     try {
-      console.log('Updating test:', id, data);
       const headers = await this.getHeaders();
       const url = `${this.baseUrl}/api/test/${id}`;
-      const response = await this.axiosInstance.put(url, data, { headers });
+      const formatted = {
+        title: data.title,
+        description: data.description,
+        isPremium: !!data.isPremium,
+        questions: (data.questions || []).map((q: any) => ({
+          text: q.text,
+          points: q.points || 1,
+          options: (q.options || []).map((opt: any) => ({
+            text: opt.text,
+            isCorrect: !!opt.isCorrect
+          }))
+        }))
+      };
+      console.log('Updating test:', id, formatted);
+      const response = await this.axiosInstance.put(url, formatted, { headers });
       return response.data;
     } catch (error) {
       console.error('Error updating test:', error);

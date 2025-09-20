@@ -175,12 +175,59 @@ public class TestController : ControllerBase
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, Test test)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTestRequest request)
     {
-        if (id != test.Id) return BadRequest();
-        _testRepo.Update(test);
-        await _testRepo.SaveChangesAsync();
-        return NoContent();
+        try
+        {
+            var existingTest = await _testRepo.GetTestWithQuestionsAsync(id);
+            if (existingTest == null) return NotFound();
+
+            // Update main properties
+            existingTest.Title = request.Title;
+            existingTest.Description = request.Description;
+            existingTest.IsPremium = request.IsPremium;
+
+            // Rebuild closed questions fully
+            existingTest.Questions.Clear();
+
+            if (request.Questions != null)
+            {
+                foreach (var q in request.Questions)
+                {
+                    var question = new Question
+                    {
+                        Text = q.Text,
+                        Test = existingTest,
+                        Options = new List<AnswerOption>(),
+                        Type = QuestionType.MultipleChoice,
+                        Points = q.Points ?? 1
+                    };
+
+                    for (int i = 0; i < (q.Options?.Count ?? 0); i++)
+                    {
+                        var opt = q.Options![i];
+                        question.Options.Add(new AnswerOption
+                        {
+                            Text = opt.Text,
+                            IsCorrect = opt.IsCorrect,
+                            Question = question,
+                            OrderIndex = i
+                        });
+                    }
+
+                    existingTest.Questions.Add(question);
+                }
+            }
+
+            _testRepo.Update(existingTest);
+            await _testRepo.SaveChangesAsync();
+
+            return Ok(existingTest);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message, details = ex.InnerException?.Message });
+        }
     }
 
     [Authorize(Roles = "Admin")]
@@ -260,6 +307,37 @@ public class CreateOpenQuestionRequest
     public string CorrectAnswer { get; set; } = string.Empty;
     
     public int Points { get; set; } = 1;
+}
+
+public class UpdateTestRequest
+{
+    [Required]
+    public string Title { get; set; } = string.Empty;
+
+    [Required]
+    public string Description { get; set; } = string.Empty;
+
+    public bool IsPremium { get; set; }
+
+    public List<UpdateQuestionRequest> Questions { get; set; } = new List<UpdateQuestionRequest>();
+}
+
+public class UpdateQuestionRequest
+{
+    [Required]
+    public string Text { get; set; } = string.Empty;
+
+    public int? Points { get; set; }
+
+    public List<UpdateOptionRequest> Options { get; set; } = new List<UpdateOptionRequest>();
+}
+
+public class UpdateOptionRequest
+{
+    [Required]
+    public string Text { get; set; } = string.Empty;
+
+    public bool IsCorrect { get; set; }
 }
 
 public class UpdateOpenQuestionRequest
