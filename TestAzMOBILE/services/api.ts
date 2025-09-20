@@ -449,6 +449,62 @@ export const api = {
     }
   },
 
+  updateOpenQuestion: async (
+    testId: string,
+    id: string,
+    data: {
+      text: string;
+      correctAnswer: string;
+      points: number;
+    }
+  ) => {
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("No authentication token found");
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/test/${testId}/open-questions/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data)
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update open question');
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Update open question error:', error);
+      throw error;
+    }
+  },
+
+  deleteOpenQuestion: async (testId: string, id: string) => {
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("No authentication token found");
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/test/${testId}/open-questions/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to delete open question');
+      }
+      return true;
+    } catch (error) {
+      console.error('Delete open question error:', error);
+      throw error;
+    }
+  },
+
   verifyCode: async (data: VerifyCodeRequest) => {
     try {
       const response = await apiService.verifyCode(data);
