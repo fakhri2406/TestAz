@@ -32,7 +32,7 @@ public class JwtService
             issuer: _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not found in configuration"),
             audience: _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not found in configuration"),
             claims: claims,
-            expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"] ?? "60")),
+            expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpiryInMinutes"] ?? "10080")),
             signingCredentials: credentials
         );
 
