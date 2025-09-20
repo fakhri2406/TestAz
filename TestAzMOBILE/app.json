@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "TestAzMOBILE",
+    "name": "Qanun Qapısı",
     "slug": "TestAzMOBILE",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "testazmobile",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.creadev.qanunqapisi",
-      "buildNumber": "1.0.0",
+      "buildNumber": "1.2.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "package": "com.yourcompany.testaz",
+      "package": "com.creadev.qanunqapisi",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
