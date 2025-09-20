@@ -314,6 +314,34 @@ class ApiService {
     }
   }
 
+  async updateTest(id: string, data: {
+    id: string;
+    title: string;
+    description: string;
+    isPremium: boolean;
+    createdAt: string | Date;
+    isActive: boolean;
+  }) {
+    try {
+      console.log('Updating test:', id, data);
+      const headers = await this.getHeaders();
+      const url = `${this.baseUrl}/api/test/${id}`;
+      const response = await this.axiosInstance.put(url, data, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating test:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
+  }
+
   async submitTestSolution(solution: {
     testId: string;
     score: number;

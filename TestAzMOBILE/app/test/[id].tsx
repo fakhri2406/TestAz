@@ -205,15 +205,24 @@ export default function TestDetailScreen() {
               )}
             </ThemedView>
             {isAdmin && (
-              <TouchableOpacity
-                style={[styles.deleteButton, { backgroundColor: "#dc3545" }]}
-                onPress={handleDeleteTest}
-              >
-                <Ionicons name="trash-outline" size={20} color="#fff" />
-                <ThemedText style={styles.deleteButtonText}>
-                  {translations.delete}
-                </ThemedText>
-              </TouchableOpacity>
+              <ThemedView style={styles.actionsContainer}>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: '#0A84FF' }]}
+                  onPress={() => router.push({ pathname: '/test/update', params: { id: test.id } })}
+                >
+                  <Ionicons name="create-outline" size={20} color="#fff" />
+                  <ThemedText style={styles.editButtonText}>Redaktə et</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.deleteButton, { backgroundColor: "#dc3545", marginLeft: 8 }]}
+                  onPress={handleDeleteTest}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                  <ThemedText style={styles.deleteButtonText}>
+                    {translations.delete}
+                  </ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
             )}
           </ThemedView>
 
@@ -423,6 +432,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   deleteButtonText: {
+    color: "#fff",
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+  },
+  editButtonText: {
     color: "#fff",
     marginLeft: 4,
     fontSize: 14,

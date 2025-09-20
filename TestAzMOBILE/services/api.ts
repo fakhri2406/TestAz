@@ -262,6 +262,25 @@ export const api = {
     }
   },
 
+  updateTest: async (
+    id: string,
+    data: {
+      id: string;
+      title: string;
+      description: string;
+      isPremium: boolean;
+      createdAt: string | Date;
+      isActive: boolean;
+    }
+  ): Promise<void> => {
+    try {
+      await apiService.updateTest(id, data);
+    } catch (error) {
+      console.error("Update test error:", error);
+      throw error;
+    }
+  },
+
   submitTestSolution: async (
     solution: TestSolution
   ): Promise<TestSolutionResponse> => {
