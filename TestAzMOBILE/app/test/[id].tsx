@@ -83,25 +83,47 @@ export default function TestDetailScreen() {
     }
   };
 
+  // Добавьте эту функцию в начало файла TestDetailScreen
+  const safeLog = (label: string, obj: any, maxLength: number = 1000) => {
+    try {
+      const jsonString = JSON.stringify(obj, null, 2);
+      if (jsonString.length > maxLength) {
+        console.log(
+          `${label} (truncated):`,
+          jsonString.substring(0, maxLength) + "..."
+        );
+      } else {
+        console.log(`${label}:`, jsonString);
+      }
+    } catch (error) {
+      console.log(
+        `${label} (could not stringify):`,
+        typeof obj,
+        Object.keys(obj || {})
+      );
+    }
+  };
+
+  // И используйте в loadTest вместо JSON.stringify:
   const loadTest = async () => {
     try {
       setLoading(true);
       const testData: TestData = await api.getTest(id as string);
-      console.log("Test data:", JSON.stringify(testData, null, 2));
 
-      // ИСПРАВЛЕНИЕ: Правильная обработка структуры данных
+      // Безопасное логирование
+      safeLog("Test data", testData, 2000);
+
       if (testData) {
         const formattedTest: Test = {
           id: testData.test?.id || "",
           title: testData.test?.title || "",
           description: testData.test?.description || "",
           isPremium: testData.test?.isPremium || false,
-          // Обрабатываем закрытые вопросы из testData.test?.questions
           questions: testData.test?.questions || [],
-          // Обрабатываем открытые вопросы из testData.openQuestions
           openQuestions: testData.openQuestions || [],
         };
 
+        safeLog("Formatted test", formattedTest, 1000);
         setTest(formattedTest);
       } else {
         setTest(null);
@@ -207,14 +229,24 @@ export default function TestDetailScreen() {
             {isAdmin && (
               <ThemedView style={styles.actionsContainer}>
                 <TouchableOpacity
-                  style={[styles.editButton, { backgroundColor: '#0A84FF' }]}
-                  onPress={() => router.push({ pathname: '/test/update', params: { id: test.id } })}
+                  style={[styles.editButton, { backgroundColor: "#0A84FF" }]}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/test/update",
+                      params: { id: test.id },
+                    })
+                  }
                 >
                   <Ionicons name="create-outline" size={20} color="#fff" />
-                  <ThemedText style={styles.editButtonText}>Redaktə et</ThemedText>
+                  <ThemedText style={styles.editButtonText}>
+                    Redaktə et
+                  </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.deleteButton, { backgroundColor: "#dc3545", marginLeft: 8 }]}
+                  style={[
+                    styles.deleteButton,
+                    { backgroundColor: "#dc3545", marginLeft: 8 },
+                  ]}
                   onPress={handleDeleteTest}
                 >
                   <Ionicons name="trash-outline" size={20} color="#fff" />
@@ -438,8 +470,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center'
+    flexDirection: "row",
+    alignItems: "center",
   },
   editButton: {
     flexDirection: "row",

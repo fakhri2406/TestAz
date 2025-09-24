@@ -208,7 +208,16 @@ export default function TakeTestScreen() {
       await clearLocalAnswers();
 
       const testData: TestData = await api.getTest(id as string);
-      console.log("Raw test data:", JSON.stringify(testData, null, 2));
+
+      // УБИРАЕМ JSON.stringify для избежания ошибки памяти
+      console.log("Raw test data received successfully");
+      console.log("Test ID:", testData.test?.id);
+      console.log("Test title:", testData.test?.title);
+      console.log(
+        "Closed questions count:",
+        testData.test?.questions?.length || 0
+      );
+      console.log("Open questions count:", testData.openQuestions?.length || 0);
 
       const formattedClosedQuestions = Array.isArray(testData.test?.questions)
         ? testData.test.questions.map((q: Question) => {
@@ -248,6 +257,16 @@ export default function TakeTestScreen() {
         openQuestions: formattedOpenQuestions,
       };
 
+      console.log("Test formatted successfully");
+      console.log(
+        "Final test questions count:",
+        formattedTest.questions.length
+      );
+      console.log(
+        "Final test open questions count:",
+        formattedTest.openQuestions.length
+      );
+
       setTest(formattedTest);
 
       const initialClosedAnswers = Array(formattedClosedQuestions.length).fill(
@@ -265,6 +284,8 @@ export default function TakeTestScreen() {
           [formattedTest.id]: formattedTest,
         })
       );
+
+      console.log("Test data saved to AsyncStorage");
     } catch (error) {
       console.error("Error loading test:", error);
       Alert.alert(translations.error, translations.failedToLoadTest);
