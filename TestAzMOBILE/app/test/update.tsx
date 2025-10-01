@@ -246,9 +246,12 @@ export default function UpdateTestScreen() {
 
       {question.options.map((option, oIndex) => (
         <ThemedView key={`opt-${question.id || 'new'}-${oIndex}`} style={[styles.optionContainer, { backgroundColor: cardBackgroundColor }]}>
+          <ThemedText style={styles.optionLabel}>
+            {String.fromCharCode(65 + oIndex)})
+          </ThemedText>
           <ThemedTextInput
             style={styles.optionInput}
-            placeholder={translations.option + ' ' + (oIndex + 1)}
+            placeholder={translations.option + ' ' + String.fromCharCode(65 + oIndex)}
             value={option.text}
             onChangeText={(text) => updateOption(qIndex, oIndex, 'text', text)}
           />
@@ -476,6 +479,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     padding: 8,
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+    minWidth: 30,
   },
   optionInput: {
     flex: 1,

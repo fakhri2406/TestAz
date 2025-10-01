@@ -296,13 +296,16 @@ export default function CreateTest() {
         </Text>
         {currentQuestion.options.map((option, index) => (
           <View key={index} style={styles.optionContainer}>
+            <Text style={[styles.optionLabel, { color: textColor }]}>
+              {String.fromCharCode(65 + index)})
+            </Text>
             <TextInput
               style={[
                 styles.input,
                 styles.optionInput,
                 { backgroundColor, color: textColor, borderColor: iconColor },
               ]}
-              placeholder={`${translations.option} ${index + 1}`}
+              placeholder={`${translations.option} ${String.fromCharCode(65 + index)}`}
               placeholderTextColor={iconColor}
               value={option.text}
               onChangeText={(text) => updateOption(index, text)}
@@ -532,6 +535,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
+    minWidth: 30,
   },
   optionInput: {
     flex: 1,

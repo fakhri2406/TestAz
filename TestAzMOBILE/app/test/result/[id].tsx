@@ -10,6 +10,12 @@ import { ScreenshotPrevention } from "@/components/ScreenshotPrevention";
 import { translations } from "@/constants/translations";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Helper function to format questions with lists
+const formatQuestionText = (text: string): string => {
+  // Add line breaks before numbered list items (1., 2., etc. or 1), 2), etc.)
+  return text.replace(/(\d+[\.)]\s*)/g, '\n$1');
+};
+
 interface LocalTest {
   id: string;
   title: string;
@@ -282,7 +288,7 @@ export default function TestResultDetailScreen() {
                 </ThemedView>
 
                 <ThemedText style={styles.questionText}>
-                  {question.text}
+                  {formatQuestionText(question.text)}
                 </ThemedText>
 
                 <ThemedView style={styles.optionsContainer}>
@@ -380,7 +386,7 @@ export default function TestResultDetailScreen() {
                 </ThemedView>
 
                 <ThemedText style={styles.questionText}>
-                  {question.text}
+                  {formatQuestionText(question.text)}
                 </ThemedText>
 
                 <ThemedView style={styles.openAnswerContainer}>

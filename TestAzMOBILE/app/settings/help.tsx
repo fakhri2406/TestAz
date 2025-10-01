@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -29,6 +29,18 @@ export default function HelpScreen() {
       answer: 'Giriş səhifəsində "Şifrəni unutdum" düyməsini klikləyin və e-poçt ünvanınızı daxil edin. Şifrə bərpası üçün təlimatlar e-poçt ünvanınıza göndəriləcək.'
     }
   ];
+
+  const handleEmail = () => {
+    Linking.openURL('mailto:ferid.qurbanov.111@inbox.ru').catch(() => {
+      Alert.alert(translations.error, 'E-poçt açıla bilmədi');
+    });
+  };
+
+  const handleCall = () => {
+    Linking.openURL('tel:+994513555183').catch(() => {
+      Alert.alert(translations.error, 'Telefon nömrəsi açıla bilmədi');
+    });
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -60,7 +72,10 @@ export default function HelpScreen() {
             {translations.contactSupport}
           </ThemedText>
 
-          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
+          <TouchableOpacity 
+            style={[styles.menuItem, { borderBottomColor: borderColor }]}
+            onPress={handleEmail}
+          >
             <Ionicons name="mail-outline" size={24} color={tintColor} />
             <ThemedText style={styles.menuText}>
               {translations.emailSupport}
@@ -68,15 +83,10 @@ export default function HelpScreen() {
             <Ionicons name="chevron-forward" size={24} color={borderColor} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
-            <Ionicons name="chatbubble-outline" size={24} color={tintColor} />
-            <ThemedText style={styles.menuText}>
-              {translations.liveChat}
-            </ThemedText>
-            <Ionicons name="chevron-forward" size={24} color={borderColor} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
+          <TouchableOpacity 
+            style={[styles.menuItem, { borderBottomColor: borderColor }]}
+            onPress={handleCall}
+          >
             <Ionicons name="call-outline" size={24} color={tintColor} />
             <ThemedText style={styles.menuText}>
               {translations.phoneSupport}

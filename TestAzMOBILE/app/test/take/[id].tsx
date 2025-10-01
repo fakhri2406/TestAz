@@ -16,6 +16,12 @@ import { api } from "@/services/api";
 import { translations } from "@/constants/translations";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Helper function to format questions with lists
+const formatQuestionText = (text: string): string => {
+  // Add line breaks before numbered list items (1., 2., etc. or 1), 2), etc.)
+  return text.replace(/(\d+[\.)]\s*)/g, '\n$1');
+};
+
 interface Option {
   text: string;
   isCorrect?: boolean;
@@ -489,7 +495,7 @@ export default function TakeTestScreen() {
                 {translations.multipleChoice})
               </ThemedText>
               <ThemedText style={styles.questionText}>
-                {question.text}
+                {formatQuestionText(question.text)}
               </ThemedText>
 
               {question.options.map((option, optionIndex) => (
@@ -506,7 +512,7 @@ export default function TakeTestScreen() {
                   }}
                 >
                   <ThemedText style={styles.optionText}>
-                    {option.text}
+                    {String.fromCharCode(65 + optionIndex)}) {option.text}
                   </ThemedText>
                   {closedQuestionAnswers[questionIndex] === optionIndex && (
                     <Ionicons
@@ -534,7 +540,7 @@ export default function TakeTestScreen() {
                 {translations.openQuestion})
               </ThemedText>
               <ThemedText style={styles.questionText}>
-                {question.text}
+                {formatQuestionText(question.text)}
               </ThemedText>
 
               <TextInput

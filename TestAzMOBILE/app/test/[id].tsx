@@ -15,6 +15,12 @@ import { api } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { translations } from "@/constants/translations";
 
+// Helper function to format questions with lists
+const formatQuestionText = (text: string): string => {
+  // Add line breaks before numbered list items (1., 2., etc. or 1), 2), etc.)
+  return text.replace(/(\d+[\.)]\s*)/g, '\n$1');
+};
+
 interface Option {
   id: string;
   text: string;
@@ -285,7 +291,7 @@ export default function TestDetailScreen() {
                       {translations.question} {questionIndex + 1} (Bağlı)
                     </ThemedText>
                     <ThemedText style={styles.questionText}>
-                      {question.text}
+                      {formatQuestionText(question.text)}
                     </ThemedText>
 
                     <ThemedView style={styles.optionsContainer}>
@@ -300,7 +306,7 @@ export default function TestDetailScreen() {
                             ]}
                           >
                             <ThemedText style={styles.optionText}>
-                              {optionIndex + 1}. {option.text}
+                              {String.fromCharCode(65 + optionIndex)}) {option.text}
                             </ThemedText>
                             {option.isCorrect && (
                               <ThemedText
@@ -339,7 +345,7 @@ export default function TestDetailScreen() {
                       {test.questions.length + questionIndex + 1} (Açıq)
                     </ThemedText>
                     <ThemedText style={styles.questionText}>
-                      {question.text}
+                      {formatQuestionText(question.text)}
                     </ThemedText>
                     <ThemedText style={styles.pointsText}>
                       Xallar: {question.points}
